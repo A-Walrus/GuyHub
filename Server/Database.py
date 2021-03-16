@@ -17,7 +17,6 @@ class Crypto():
 	def encrypt(self,data):
 		return self.cipher_suite.encrypt(data.encode())
 
-
 class Commit():
 	def __init__(self,commit_id,name,message,parent_id,branch,user,repo):
 		self.id = commit_id
@@ -27,6 +26,16 @@ class Commit():
 		self.branch = branch
 		self.user = user
 		self.repo = repo
+
+class User():
+	def __init__(self,user_id,name):
+		self.id = user_id
+		self.name = name
+
+class Repo():
+	def __init__(self,repo_id,name):
+		self.id = repo_id
+		self.name = name
 
 class Db():
 	def __init__(self,path):
@@ -47,7 +56,7 @@ class Db():
 		cursor = self.connect.cursor()
 		cursor.execute('''	SELECT Users.Name,Users.Password
 							From Users 
-							WHERE Users.Name="%s"'''%user)
+							WHERE Users.Name="%s"'''%user.name)
 		encrypted = cursor.fetchall()[0][1]
 		actual = crypto.decrypt(encrypted.encode()).decode()
 		return actual == password
@@ -58,11 +67,40 @@ class Db():
 		cursor.execute('''	UPDATE Users SET Password = "%s" WHERE Users.Name  = "%s"'''% (encrypted,user))
 		self.connect.commit()
 
-	def add_user(self,user,password):
+	def add_user(self, user_name, password):
 		encrypted = crypto.encrypt(password).decode()
 		cursor = self.connect.cursor()
-		cursor.execute('''	INSERT INTO Users (Name,Password) VALUES("%s","%s")'''%(user,encrypted))
+		cursor.execute('''	INSERT INTO Users (Name,Password) VALUES("%s","%s")'''%(user_name,encrypted))
 		self.connect.commit()
+
+		cursor.execute('''	SELECT Users.ID FROM Users WHERE Users.Name = "%s"'''%user_name)
+		user_id  = cursor.fetchall()[0][0]
+
+		return User(user_id,user)
+
+	def get_user_repos(self, user):
+		cursor = self.connect.cursor()
+		cursor.execute('''	SELECT Repos.Name
+							From Repos JOIN Connections ON Repos.ID = Connections.Repo JOIN Users ON Users.ID = Connections.User WHERE Users.Name="%s"'''%user.name)
+		repos = cursor.fetchall()
+		return repos
+
+	def add_user_to_repo(self, user, repo):
+		cursor = self.connect.cursor()
+		cursor.execute('''	INSERT INTO Connections (Repo,User) VALUES("%s","%s")'''%(repo.id,user.id))
+		self.connect.commit()
+
+	def add_repo(self, owner, repo_name):
+		cursor = self.connect.cursor()
+		cursor.execute('''	INSERT INTO Repos (Name) VALUES("%s")'''%(repo_name))
+		self.connect.commit()
+
+		cursor.execute('''	SELECT Repos.ID FROM Repos WHERE Repos.Name = "%s"'''%repo_name)
+		repo_id  = cursor.fetchall()[0][0]
+		repo = Repo(repo_id,repo_name)
+		self.add_user_to_repo(owner,repo)
+		return repo
+
 
 
 crypto = Crypto()

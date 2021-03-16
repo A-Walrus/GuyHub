@@ -2,4 +2,7 @@ import Database
 
 db = Database.Db("Guyhub.db")
 
-print(db.validate('Elon Musk','$TSLA'))
+#db.add_repo(Database.User(3,"Rudich"),"Rudichs Repo")
+
+#print(db.get_user_repos(Database.User(3,'Rudich')))
+
