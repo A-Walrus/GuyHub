@@ -42,65 +42,64 @@ class Db():
 		self.path = path
 		self.connect = lite.connect(self.path)
 
-	def get_commits(self,condition):
+	def get_user(self,user_name):
+		user_id  = self.fetch('''	SELECT Users.ID FROM Users WHERE Users.Name = "%s"'''%user_name)[0][0]
+		return User(user_id,user_name)
+
+	def get_repo(self,name):
+		repo_id  = self.fetch('''	SELECT Repos.ID FROM Repos WHERE Repos.Name = "%s"'''%name)[0][0]
+		return Repo(repo_id,name)
+
+	def execute(self,sql):
 		cursor = self.connect.cursor()
-		cursor.execute('''	SELECT Commits.ID, Commits.Name, Commits.Message, Commits.Parent, Branches.Name, Users.Name, Repos.Name
+		cursor.execute(sql)
+		self.connect.commit()
+
+	def fetch(self,sql):
+		cursor = self.connect.cursor()
+		cursor.execute(sql)
+		return cursor.fetchall()
+
+	def get_commits(self,condition):
+		commits = self.fetch('''	SELECT Commits.ID, Commits.Name, Commits.Message, Commits.Parent, Branches.Name, Users.Name, Repos.Name
 							From Commits JOIN Branches ON Branches.ID = Commits.Branch 
 							JOIN Users ON Users.ID = Commits.User 
 							JOIN Repos ON Repos.ID = Branches.Repo 
 							WHERE %s'''% condition)
-		commits = cursor.fetchall()
 		return [Commit(commit[0],commit[1],commit[2],commit[3],commit[4],commit[5],commit[6]) for commit in commits]
 
 	def validate(self, user, password):
-		cursor = self.connect.cursor()
-		cursor.execute('''	SELECT Users.Name,Users.Password
+		encrypted = self.fetch('''	SELECT Users.Name,Users.Password
 							From Users 
-							WHERE Users.Name="%s"'''%user.name)
-		encrypted = cursor.fetchall()[0][1]
+							WHERE Users.Name="%s"'''%user.name)[0][1]
 		actual = crypto.decrypt(encrypted.encode()).decode()
 		return actual == password
 
 	def set_password(self, user, password):
 		encrypted = crypto.encrypt(password).decode()
-		cursor = self.connect.cursor()
-		cursor.execute('''	UPDATE Users SET Password = "%s" WHERE Users.Name  = "%s"'''% (encrypted,user))
-		self.connect.commit()
+		self.execute('''	UPDATE Users SET Password = "%s" WHERE Users.Name  = "%s"'''% (encrypted,user))
 
 	def add_user(self, user_name, password):
 		encrypted = crypto.encrypt(password).decode()
-		cursor = self.connect.cursor()
-		cursor.execute('''	INSERT INTO Users (Name,Password) VALUES("%s","%s")'''%(user_name,encrypted))
-		self.connect.commit()
-
-		cursor.execute('''	SELECT Users.ID FROM Users WHERE Users.Name = "%s"'''%user_name)
-		user_id  = cursor.fetchall()[0][0]
-
-		return User(user_id,user)
+		self.execute('''	INSERT INTO Users (Name,Password) VALUES("%s","%s")'''%(user_name,encrypted))
+		return self.get_user(user_name)
 
 	def get_user_repos(self, user):
-		cursor = self.connect.cursor()
-		cursor.execute('''	SELECT Repos.Name
-							From Repos JOIN Connections ON Repos.ID = Connections.Repo JOIN Users ON Users.ID = Connections.User WHERE Users.Name="%s"'''%user.name)
-		repos = cursor.fetchall()
+		repos = self.fetch('''	SELECT Repos.Name
+							From Repos JOIN Connections ON Repos.ID = Connections.Repo 
+							JOIN Users ON Users.ID = Connections.User WHERE Users.Name="%s"'''%user.name)
 		return repos
 
 	def add_user_to_repo(self, user, repo):
-		cursor = self.connect.cursor()
-		cursor.execute('''	INSERT INTO Connections (Repo,User) VALUES("%s","%s")'''%(repo.id,user.id))
-		self.connect.commit()
+		self.execute('''	INSERT INTO Connections (Repo,User) VALUES("%s","%s")'''%(repo.id,user.id))
 
 	def add_repo(self, owner, repo_name):
-		cursor = self.connect.cursor()
-		cursor.execute('''	INSERT INTO Repos (Name) VALUES("%s")'''%(repo_name))
-		self.connect.commit()
-
-		cursor.execute('''	SELECT Repos.ID FROM Repos WHERE Repos.Name = "%s"'''%repo_name)
-		repo_id  = cursor.fetchall()[0][0]
-		repo = Repo(repo_id,repo_name)
+		self.execute('''	INSERT INTO Repos (Name) VALUES("%s")'''%(repo_name))
+		repo = self.get_repo(repo_name)
 		self.add_user_to_repo(owner,repo)
 		return repo
 
+	
 
 
 crypto = Crypto()
