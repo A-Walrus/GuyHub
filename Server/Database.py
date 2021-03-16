@@ -37,6 +37,14 @@ class Repo():
 		self.id = repo_id
 		self.name = name
 
+class Branch():
+	def __init__(self,commit_id,name,parent_id,user,repo):
+		self.id = commit_id
+		self.name = name
+		self.parent_id = parent_id
+		self.user = user
+		self.repo = repo
+
 class Db():
 	def __init__(self,path):
 		self.path = path
@@ -45,10 +53,6 @@ class Db():
 	def get_user(self,user_name):
 		user_id  = self.fetch('''	SELECT Users.ID FROM Users WHERE Users.Name = "%s"'''%user_name)[0][0]
 		return User(user_id,user_name)
-
-	def get_repo(self,name):
-		repo_id  = self.fetch('''	SELECT Repos.ID FROM Repos WHERE Repos.Name = "%s"'''%name)[0][0]
-		return Repo(repo_id,name)
 
 	def execute(self,sql):
 		cursor = self.connect.cursor()
@@ -91,16 +95,27 @@ class Db():
 		return repos
 
 	def add_user_to_repo(self, user, repo):
+
 		self.execute('''	INSERT INTO Connections (Repo,User) VALUES("%s","%s")'''%(repo.id,user.id))
 
 	def add_repo(self, owner, repo_name):
 		self.execute('''	INSERT INTO Repos (Name) VALUES("%s")'''%(repo_name))
-		repo = self.get_repo(repo_name)
+		repo = self.fetch('''	SELECT Repos.ID, Repos.Name From Repos ORDER BY ID DESC''')[0]
+		repo = Repo(repo[0],repo[1])
 		self.add_user_to_repo(owner,repo)
+		branch = self.add_branch("Main",-1,owner,repo)
+		self.add_commit("Init","Initial Commit",branch,-1,owner)
 		return repo
 
-	
+	def add_branch(self, branch_name,parent,owner,repo):
+		self.execute('''	INSERT INTO Branches (Name,Repo,Parent,Owner) 
+			VALUES("%s","%s","%s","%s")'''%(branch_name,repo.id,parent,owner.id))
+		branch = self.fetch('''	SELECT * From Branches ORDER BY ID DESC''')[0]
+		return Branch(branch[0],branch[1],branch[3],branch[4],branch[2])
 
+	def add_commit(self, commit_name, commit_message, branch,parent,user):
+		self.execute('''	INSERT INTO Commits (Name,Branch,Parent,User,Message) 
+			VALUES("%s","%s","%s","%s","%s")'''%(commit_name,branch.id,parent,user.id,commit_message))
 
 crypto = Crypto()
 crypto.get_security()
