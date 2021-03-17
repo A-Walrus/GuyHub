@@ -55,6 +55,10 @@ class Db():
 		user_id  = self.fetch('''	SELECT Users.ID FROM Users WHERE Users.Name = "%s"'''%user_name)[0][0]
 		return User(user_id,user_name)
 
+	def get_repo(self, repo_id):
+		repo = self.fetch('''SELECT Repos.Name FROM Repos WHERE Repos.id = %s'''%repo_id)[0]
+		return Repo(repo_id,repo[0])
+	
 	def execute(self,sql):
 		cursor = self.connect.cursor()
 		cursor.execute(sql)
