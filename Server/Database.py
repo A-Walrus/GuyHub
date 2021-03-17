@@ -114,8 +114,12 @@ class Db():
 		return Branch(branch[0],branch[1],branch[3],branch[4],branch[2])
 
 	def add_commit(self, commit_name, commit_message, branch,parent,user):
-		self.execute('''	INSERT INTO Commits (Name,Branch,Parent,User,Message) 
-			VALUES("%s","%s","%s","%s","%s")'''%(commit_name,branch.id,parent,user.id,commit_message))
+		if branch is Branch:
+			self.execute('''	INSERT INTO Commits (Name,Branch,Parent,User,Message) 
+				VALUES("%s","%s","%s","%s","%s")'''%(commit_name,branch.id,parent,user.id,commit_message))
+		else:
+			self.execute('''	INSERT INTO Commits (Name,Branch,Parent,User,Message) 
+				VALUES("%s","%s","%s","%s","%s")'''%(commit_name,branch,parent,user.id,commit_message))
 
 crypto = Crypto()
 crypto.get_security()
