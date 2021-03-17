@@ -1,5 +1,10 @@
+
 import sqlite3 as lite
 from cryptography.fernet import Fernet
+
+import sys
+sys.path.append(r'D:\Users\Guy\School\cyber\GuyHub\General')
+from classes import *
 
 class Crypto():
 	def init_security(self):
@@ -18,33 +23,6 @@ class Crypto():
 	def encrypt(self,data):
 		return self.cipher_suite.encrypt(data.encode())
 
-class Commit():
-	def __init__(self,commit_id,name,message,parent_id,branch,user,repo):
-		self.id = commit_id
-		self.name = name
-		self.message = message
-		self.parent_id = parent_id
-		self.branch = branch
-		self.user = user
-		self.repo = repo
-
-class User():
-	def __init__(self,user_id,name):
-		self.id = user_id
-		self.name = name
-
-class Repo():
-	def __init__(self,repo_id,name):
-		self.id = repo_id
-		self.name = name
-
-class Branch():
-	def __init__(self,commit_id,name,parent_id,user,repo):
-		self.id = commit_id
-		self.name = name
-		self.parent_id = parent_id
-		self.user = user
-		self.repo = repo
 
 class Db():
 	def __init__(self,path):
@@ -121,8 +99,12 @@ class Db():
 		return Branch(branch[0],branch[1],branch[3],branch[4],branch[2])
 
 	def add_commit(self, commit_name, commit_message, branch,parent,user):
-		self.execute('''	INSERT INTO Commits (Name,Branch,Parent,User,Message) 
-			VALUES("%s","%s","%s","%s","%s")'''%(commit_name,branch.id,parent,user.id,commit_message))
+		if branch is Branch:
+			self.execute('''	INSERT INTO Commits (Name,Branch,Parent,User,Message) 
+				VALUES("%s","%s","%s","%s","%s")'''%(commit_name,branch.id,parent,user.id,commit_message))
+		else:
+			self.execute('''	INSERT INTO Commits (Name,Branch,Parent,User,Message) 
+				VALUES("%s","%s","%s","%s","%s")'''%(commit_name,branch,parent,user.id,commit_message))
 
 crypto = Crypto()
 crypto.get_security()
