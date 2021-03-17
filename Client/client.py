@@ -1,7 +1,10 @@
-import sys
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
+
+import sys
+sys.path.append(r'D:\Users\Guy\School\cyber\GuyHub\General')
+from classes import *
 
 SIZE = 20
 
@@ -31,6 +34,7 @@ class Cell(QWidget):
 			else:
 				qp.drawLine(SIZE/2, SIZE,SIZE/2,SIZE/2) # up and down
 			# qp.drawLine(0, SIZE/2,SIZE,SIZE/2) # left right
+
 			if info.dot:
 				qp.setBrush(info.color)
 				qp.drawEllipse(QPointF(SIZE/2,SIZE/2),3,3)
@@ -44,7 +48,6 @@ class Tree(QScrollArea):
 		super().__init__(*args,**kwargs)
 		self.commits= commits
 		self.initUI()
-
 
 	def initUI(self):
 		self.widget = QWidget()
