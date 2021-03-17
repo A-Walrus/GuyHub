@@ -14,6 +14,7 @@ class Crypto():
 
 	def decrypt(self,encrypted):
 		return self.cipher_suite.decrypt(encrypted)
+
 	def encrypt(self,data):
 		return self.cipher_suite.encrypt(data.encode())
 
@@ -95,8 +96,10 @@ class Db():
 		return repos
 
 	def add_user_to_repo(self, user, repo):
-
-		self.execute('''	INSERT INTO Connections (Repo,User) VALUES("%s","%s")'''%(repo.id,user.id))
+		if repo is Repo:
+			self.execute('''	INSERT INTO Connections (Repo,User) VALUES("%s","%s")'''%(repo.id,user.id))
+		else:
+			self.execute('''	INSERT INTO Connections (Repo,User) VALUES("%s","%s")'''%(repo,user.id))
 
 	def add_repo(self, owner, repo_name):
 		self.execute('''	INSERT INTO Repos (Name) VALUES("%s")'''%(repo_name))
