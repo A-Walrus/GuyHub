@@ -13,5 +13,7 @@ db = Database.Db("GuyHub.db")
 # db.add_repo(db.get_user("Guy"),"Godot")
 
 # db.add_user_to_repo(db.get_user("Dan"),db.get_repo("Blender"))
-# db.add_commit("Bugfix","I fixed a bug",1,1,db.get_user("Elon"))
-print(db.get_commits("Repos.ID=1"))
+# db.add_branch("Feature2",1,db.get_user("Elon"),1)
+# db.add_commit("Continuerer Feature","continuinging",4,8,db.get_user("Elon"))
+for i in range(10,20):
+	db.add_commit("Test %s"%i,"test",1,i,db.get_user("Elon"))
