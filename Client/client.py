@@ -208,7 +208,7 @@ def main():
 	vbox = QVBoxLayout()
 
 	connection = HTTPConnection("10.0.0.23:8080")
-	connection.request("GET","/")
+	connection.request("GET","/",headers={"user":"Guy"})
 	response = connection.getresponse()
 	data = response.read().decode()
 	connection.close
