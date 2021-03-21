@@ -3,8 +3,9 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 import sys
 import json
+import math
 
-SIZE = 30
+SIZE = 24
 
 class Cell(QWidget):
 	def __init__(self,infos):
@@ -12,17 +13,16 @@ class Cell(QWidget):
 		self.initUI()
 		self.infos = infos
 
-
 	def initUI(self):
 		self.setFixedSize(SIZE,SIZE)
-
 
 	def paintEvent(self, event):
 		qp = QPainter()
 		qp.begin(self)
+		qp.setRenderHint(QPainter.Antialiasing)
 		for info in self.infos[::-1]:
 			qp.setPen(QPen(QColor(info["color"]),2))
-			for direction in info["dirs"]:
+			for direction in set(info["dirs"]):
 				pattern = [1,2,1,-2]
 				qp.drawLine(SIZE/2,SIZE/2,(SIZE/2)*pattern[direction],(SIZE/2)*pattern[(direction-1)%4])
 			if "symbol" in info:
@@ -30,45 +30,48 @@ class Cell(QWidget):
 				if info["symbol"]=="dot":
 					qp.drawEllipse(QPointF(SIZE/2,SIZE/2),3,3)
 				if info["symbol"]=="merge":
-					qp.drawEllipse(QPointF(SIZE/2,SIZE/2),5,5)
+					offset = 6
+					qp.drawPolygon(	QPointF(SIZE/2-offset,SIZE/2),
+									QPointF(SIZE/2,SIZE/2+offset),
+									QPointF(SIZE/2+offset,SIZE/2),
+									QPointF(SIZE/2,SIZE/2-offset))
 			if "corner" in info:
-				qp.drawArc(-SIZE/2,SIZE/2,SIZE,SIZE,0,90*16)
-
+				pattern = [-0.5,-0.5,0.5,0.5]
+				corner = info["corner"]
+				qp.drawArc(SIZE*pattern[corner],SIZE*(pattern[(corner+1)%4]),SIZE,SIZE,90*16*corner,90*16*(corner+5))
 		qp.end()
 
 class CommitLine(QWidget):
 	clicked = pyqtSignal(int)
-	
 	def __init__(self,cells,data,index,*args,**kwargs):
 		super().__init__(*args,**kwargs)
 		self.cells = cells
 		self.data=data
 		self.index = index
+		self.selected=False
 		hbox = QHBoxLayout()
 		hbox.setContentsMargins(0, 0, 0, 0)
 		hbox.setSpacing(0)
 		self.setLayout(hbox)
-		spacer = QWidget()
-		spacer.setFixedWidth(10)
+		self.spacer = QWidget()
+		self.spacer.setFixedWidth(10)
 		self.label = QLabel(data["name"])
 		self.label.setFixedWidth(150)
-		hbox.addWidget(spacer)
+		hbox.addWidget(self.spacer)
 		hbox.addWidget(self.label)
 		for i,cell in enumerate(cells):
 			if len(list(filter(lambda x: x!=[],cells[i:])))!=0:
 				hbox.addWidget(Cell(cell))
 		hbox.addWidget(QWidget())
-
 		self.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed))
 		self.setFixedHeight(SIZE)
 
 	def mousePressEvent(self,event):
 		self.clicked.emit(self.index)
-		self.setStyleSheet("background-color: #ffffff;")
-
+		self.selected = True
 
 	def unselect(self):
-		self.setStyleSheet("")
+		self.selected = False
 
 class Tree(QScrollArea):
 	def __init__(self,commits,*args,**kwargs):
@@ -83,61 +86,78 @@ class Tree(QScrollArea):
 
 	def calculate_tree(self):
 		branches = list(set([commit['branch']['id'] for commit in self.commits]))
-		grid = [[[] for i in branches]for i in self.commits]
+		self.grid = [[[] for i in branches]for i in self.commits]
 		collumns = [None]*len(branches)
-		dead = [0]*len(branches)
-		commits = {}
+		used_collumns = [0]*len(branches) # last row used in each collumn
+		self.commit_positions = {}
 		for i, commit in enumerate(self.commits):
-
 			branch_id = commit["branch"]["id"]
-
-			
 			commits_left = self.commits[i+1:]
-			if branch_id in collumns:
-				collumn = collumns.index(branch_id)
-				if self.is_branch_dead(branch_id,commits_left):
-					self.add_cell_data(commits,grid,i,collumn,{"dirs":[0],"symbol":"dot","color": self.COLORS[collumn%len(self.COLORS)]},commit)
-				else:
-					self.add_cell_data(commits,grid,i,collumn,{"dirs":[0,2],"symbol":"dot","color": self.COLORS[collumn%len(self.COLORS)]},commit)
-			else:
-				is_dead = self.is_branch_dead(branch_id,commits_left)
 
-				if i==0:
-					collumns[0] = branch_id
-					self.add_cell_data(commits,grid,i,0,{"dirs":[0 if is_dead else 2],"symbol":"dot","color": self.COLORS[0]})
+			if branch_id in collumns: # branch is already active
+				collumn = collumns.index(branch_id)
+				if self.is_branch_dead(branch_id,commits_left): # last commit of the branch
+					self.add_cell_data(i,collumn,{"dirs":[0],"symbol":True,"color": self.COLORS[collumn%len(self.COLORS)]},commit)
 				else:
-					pos = commits[commit["parent"]]
-					l = list(filter(lambda x: x[1]==None and dead[x[0]]<pos[0] and x[0]>pos[1],enumerate(collumns)))
+					self.add_cell_data(i,collumn,{"dirs":[0,2],"symbol":True,"color": self.COLORS[collumn%len(self.COLORS)]},commit)
+
+			else: # branch doesn't exist, needs to be created
+				is_dead = self.is_branch_dead(branch_id,commits_left)
+				if i==0: # root
+					collumns[0] = branch_id
+					self.add_cell_data(i,0,{"dirs":[0 if is_dead else 2],"symbol":True,"color": self.COLORS[0]},commit)
+				else: # new branch
+					parent_pos = self.commit_positions[commit["parent"]]
+					l = list(filter(lambda x: x[1]==None and used_collumns[x[0]]<parent_pos[0] and x[0]>parent_pos[1],enumerate(collumns)))
 					collumn = l[0][0]
 					collumns[collumn] = branch_id
-					self.add_cell_data(commits,grid,i,collumn,{"dirs":[0,0 if is_dead else 2],"symbol":"dot","color": self.COLORS[collumn%len(self.COLORS)]},commit)
-					my_pos = commits[commit["id"]]
-					self.add_cell_data(commits,grid,pos[0],pos[1],{"dirs":[1],"color": self.COLORS[collumn%len(self.COLORS)]})
+					self.add_cell_data(i,collumn,{"dirs":[0 if is_dead else 2],"symbol":True,"color": self.COLORS[collumn%len(self.COLORS)]},commit)
+					my_pos = self.commit_positions[commit["id"]]
+					self.connect(my_pos,parent_pos)
 
-					for row in range(my_pos[0]-1,pos[0],-1):
-						self.add_cell_data(commits,grid,row,my_pos[1],{"dirs":[0,2],"color": self.COLORS[collumn%len(self.COLORS)]})
+			if commit["mergedFrom"]:
+				self.connect(self.commit_positions[commit["mergedFrom"]],self.commit_positions[commit["id"]])
 
-					for col in range(my_pos[1]-1,pos[1],-1):
-						self.add_cell_data(commits,grid,pos[0],col,{"dirs":[1,3],"color": self.COLORS[collumn%len(self.COLORS)]})
-					self.add_cell_data(commits,grid,pos[0],my_pos[1],{"dirs":[],"corner":1,"color": self.COLORS[collumn%len(self.COLORS)]})
-
-
-			for j,collumn in enumerate(collumns):
+			for j,collumn in enumerate(collumns): # progress all active branches
 				if collumn != branch_id and collumn!=None:
-					self.add_cell_data(commits,grid,i,j,{"dirs":[0,2],"color": self.COLORS[j%len(self.COLORS)]})
+					self.add_cell_data(i,j,{"dirs":[0,2],"color": self.COLORS[j%len(self.COLORS)]})
 
 			
-			for j,branch in enumerate(collumns):
+			for j,branch in enumerate(collumns): # remove all dead branches
 				if branch:
 					if self.is_branch_dead(branch,commits_left):
 						collumns[j]=None
-						dead[j]=i
-		return grid
+						used_collumns[j]=i
+		return self.grid
 
-	def add_cell_data(self,commits,grid,x,y,info,commit=None):
-		grid[x][y].append(info)
+	def connect(self,start,end): # go straight from start, turn once at same height as end, color is start color
+		d_y = end[0]-start[0]
+		d_x = end[1]-start[1]
+		dir_y = d_y//abs(d_y)
+		dir_x = d_x//abs(d_x)
+
+		CORNERS = {
+		(1,1): 3,
+		(1,-1): 2, 
+		(-1,-1): 1,
+		(-1,1): 0}
+		color = self.COLORS[start[1]%len(self.COLORS)]
+		self.add_cell_data(start[0],start[1],{"dirs":[0 if d_y<0 else 2],"color": color }) # start
+		self.add_cell_data(end[0],end[1],{"dirs":[1 if d_x<0 else 3],"color": color}) # end
+		self.add_cell_data(end[0],start[1],{"dirs":[],"corner":CORNERS[(dir_x,dir_y)],"color": color}) # corner
+
+		for y in range(start[0],end[0],dir_y): # vertical
+			self.add_cell_data(y,start[1],{"dirs":[0,2],"color": color})
+		for x in range(start[1]+dir_x,end[1],dir_x): # vertical
+			self.add_cell_data(end[0],x,{"dirs":[1,3],"color": color})
+
+
+	def add_cell_data(self,x,y,info,commit=None):
+		if "symbol" in info and info["symbol"]==True:
+			info["symbol"] = "dot" if commit["mergedFrom"]==None else "merge"
+		self.grid[x][y].append(info)
 		if commit:
-			commits[commit["id"]] = (x,y)
+			self.commit_positions[commit["id"]] = (x,y)
 
 
 	def is_branch_dead(self,branch,commits):
@@ -161,7 +181,6 @@ class Tree(QScrollArea):
 			self.lines.append(line)
 			self.vbox.addWidget(line)
 
-
 		self.vbox.setSpacing(0)
 		self.vbox.setContentsMargins(0, 0, 0, 0)
 		self.vbox.addWidget(QWidget()) # expanding spacer
@@ -172,14 +191,17 @@ class Tree(QScrollArea):
 		self.setWidget(self.widget)
 		self.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding))
 
-
 def main():
 	app = QApplication(sys.argv)
+	file = QFile("theme.qss")
+	file.open(QFile.ReadOnly | QFile.Text)
+	stream = QTextStream(file)
+	app.setStyleSheet(stream.readAll())
 	win = QWidget()
 	vbox = QVBoxLayout()
 
 
-	data = '''[{"id": 1, "name": "Init", "message": "Initial Commit", "parent": null, "branch": {"name": "Main", "id": 1}, "user": "Elon", "repo": "Tesla", "mergedFrom": null}, {"id": 4, "name": "Bugfix", "message": "I fixed a bug", "parent": 1, "branch": {"name": "Main", "id": 1}, "user": "Elon", "repo": "Tesla", "mergedFrom": null}, {"id": 5, "name": "Start Feature", "message": "start", "parent": 4, "branch": {"name": "Feature", "id": 4}, "user": "Elon", "repo": "Tesla", "mergedFrom": null}, {"id": 6, "name": "Buf gix", "message": "bugfix", "parent": 4, "branch": {"name": "Main", "id": 1}, "user": "Elon", "repo": "Tesla", "mergedFrom": null}, {"id": 7, "name": "Continue Feature", "message": "continue", "parent": 5, "branch": {"name": "Feature", "id": 4}, "user": "Elon", "repo": "Tesla", "mergedFrom": null}, {"id": 8, "name": "Continuer Feature", "message": "continuing", "parent": 7, "branch": {"name": "Feature", "id": 4}, "user": "Elon", "repo": "Tesla", "mergedFrom": null}, {"id": 9, "name": "Continuerer Feature", "message": "continuinging", "parent": 8, "branch": {"name": "Feature", "id": 4}, "user": "Elon", "repo": "Tesla", "mergedFrom": null}, {"id": 10, "name": "Bug Add", "message": "bugadd", "parent": 6, "branch": {"name": "Main", "id": 1}, "user": "Elon", "repo": "Tesla", "mergedFrom": null}, {"id": 11, "name": "Bug Add", "message": "bugadd", "parent": 6, "branch": {"name": "Feature2", "id": 5}, "user": "Elon", "repo": "Tesla", "mergedFrom": null}, {"id": 12, "name": "Test 10", "message": "test", "parent": 10, "branch": {"name": "Main", "id": 1}, "user": "Elon", "repo": "Tesla", "mergedFrom": null}, {"id": 13, "name": "Test 11", "message": "test", "parent": 11, "branch": {"name": "Main", "id": 1}, "user": "Elon", "repo": "Tesla", "mergedFrom": null}, {"id": 14, "name": "Test 12", "message": "test", "parent": 12, "branch": {"name": "Main", "id": 1}, "user": "Elon", "repo": "Tesla", "mergedFrom": null}, {"id": 15, "name": "Test 13", "message": "test", "parent": 13, "branch": {"name": "Main", "id": 1}, "user": "Elon", "repo": "Tesla", "mergedFrom": null}, {"id": 16, "name": "Test 14", "message": "test", "parent": 14, "branch": {"name": "Main", "id": 1}, "user": "Elon", "repo": "Tesla", "mergedFrom": null}, {"id": 17, "name": "Test 15", "message": "test", "parent": 15, "branch": {"name": "Main", "id": 1}, "user": "Elon", "repo": "Tesla", "mergedFrom": 11}, {"id": 18, "name": "Test 16", "message": "test", "parent": 16, "branch": {"name": "Main", "id": 1}, "user": "Elon", "repo": "Tesla", "mergedFrom": null}, {"id": 19, "name": "Test 17", "message": "test", "parent": 17, "branch": {"name": "Main", "id": 1}, "user": "Elon", "repo": "Tesla", "mergedFrom": null}, {"id": 20, "name": "Test 18", "message": "test", "parent": 18, "branch": {"name": "Main", "id": 1}, "user": "Elon", "repo": "Tesla", "mergedFrom": null}, {"id": 21, "name": "Test 19", "message": "test", "parent": 19, "branch": {"name": "Main", "id": 1}, "user": "Elon", "repo": "Tesla", "mergedFrom": null}]'''
+	data = '''[{"id": 1, "name": "Init", "message": "Initial Commit", "parent": null, "branch": {"name": "Main", "id": 1}, "user": "Elon", "repo": "Tesla", "mergedFrom": null}, {"id": 4, "name": "Bugfix", "message": "I fixed a bug", "parent": 1, "branch": {"name": "Main", "id": 1}, "user": "Elon", "repo": "Tesla", "mergedFrom": null}, {"id": 5, "name": "Start Feature", "message": "start", "parent": 4, "branch": {"name": "Feature", "id": 4}, "user": "Elon", "repo": "Tesla", "mergedFrom": null}, {"id": 6, "name": "Buf gix", "message": "bugfix", "parent": 4, "branch": {"name": "Main", "id": 1}, "user": "Elon", "repo": "Tesla", "mergedFrom": null}, {"id": 7, "name": "Continue Feature", "message": "continue", "parent": 5, "branch": {"name": "Feature", "id": 4}, "user": "Elon", "repo": "Tesla", "mergedFrom": null}, {"id": 8, "name": "Continuer Feature", "message": "continuing", "parent": 7, "branch": {"name": "Feature", "id": 4}, "user": "Elon", "repo": "Tesla", "mergedFrom": null}, {"id": 9, "name": "Continuerer Feature", "message": "continuinging", "parent": 8, "branch": {"name": "Feature", "id": 4}, "user": "Elon", "repo": "Tesla", "mergedFrom": null}, {"id": 10, "name": "Bug Add", "message": "bugadd", "parent": 6, "branch": {"name": "Main", "id": 1}, "user": "Elon", "repo": "Tesla", "mergedFrom": null}, {"id": 11, "name": "Bug Add", "message": "bugadd", "parent": 6, "branch": {"name": "Feature2", "id": 5}, "user": "Elon", "repo": "Tesla", "mergedFrom": 9}, {"id": 12, "name": "Test 10", "message": "test", "parent": 10, "branch": {"name": "Main", "id": 1}, "user": "Elon", "repo": "Tesla", "mergedFrom": null}, {"id": 13, "name": "Test 11", "message": "test", "parent": 11, "branch": {"name": "Main", "id": 1}, "user": "Elon", "repo": "Tesla", "mergedFrom": null}, {"id": 14, "name": "Test 12", "message": "test", "parent": 12, "branch": {"name": "Main", "id": 1}, "user": "Elon", "repo": "Tesla", "mergedFrom": null}, {"id": 15, "name": "Test 13", "message": "test", "parent": 13, "branch": {"name": "Main", "id": 1}, "user": "Elon", "repo": "Tesla", "mergedFrom": null}, {"id": 16, "name": "Test 14", "message": "test", "parent": 14, "branch": {"name": "Main", "id": 1}, "user": "Elon", "repo": "Tesla", "mergedFrom": null}, {"id": 17, "name": "Test 15", "message": "test", "parent": 15, "branch": {"name": "Main", "id": 1}, "user": "Elon", "repo": "Tesla", "mergedFrom": 11}, {"id": 18, "name": "Test 16", "message": "test", "parent": 16, "branch": {"name": "Main", "id": 1}, "user": "Elon", "repo": "Tesla", "mergedFrom": null}, {"id": 19, "name": "Test 17", "message": "test", "parent": 17, "branch": {"name": "Main", "id": 1}, "user": "Elon", "repo": "Tesla", "mergedFrom": null}, {"id": 20, "name": "Test 18", "message": "test", "parent": 18, "branch": {"name": "Main", "id": 1}, "user": "Elon", "repo": "Tesla", "mergedFrom": null}, {"id": 21, "name": "Test 19", "message": "test", "parent": 19, "branch": {"name": "Main", "id": 1}, "user": "Elon", "repo": "Tesla", "mergedFrom": null}]'''
 
 	tree = Tree(json.loads(data))
 
