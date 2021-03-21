@@ -13,14 +13,16 @@ class Cell(QWidget):
 		self.infos = infos
 		self.setFixedSize(SIZE,SIZE)
 
-	def paintEvent(self, event):
-		# paint base object
+	def drawBase(self,event):
 		super().paintEvent(event)
 		opt = QStyleOption()
 		opt.initFrom(self)
 		p = QPainter(self)
 		s = self.style()
 		s.drawPrimitive(QStyle.PE_Widget, opt, p, self) 
+
+	def paintEvent(self, event):
+		self.drawBase(event)
 
 		qp = QPainter()
 		qp.begin(self)
@@ -73,7 +75,7 @@ class CommitLine(QWidget):
 
 	def mousePressEvent(self,event):
 		self.clicked.emit(self.index)
-		self.setStyleSheet("background-color: #444466;")
+		self.setStyleSheet("background-color: #333344;")
 
 	def unselect(self):
 		self.setStyleSheet("")
