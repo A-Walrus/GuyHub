@@ -2,9 +2,6 @@
 import sqlite3 as lite
 from cryptography.fernet import Fernet
 
-import sys
-sys.path.append(r'D:\Users\Guy\School\cyber\GuyHub\General')
-from classes import *
 
 class Crypto():
 	def init_security(self):
@@ -29,19 +26,14 @@ class Db():
 		self.path = path
 		self.connect = lite.connect(self.path)
 
-	def get_id(self,obj):
-		if hasattr(obj, 'id'):
-			return obj.idd
-		else:
-			return obj
 
 	def get_user(self,user_name):
 		user_id  = self.fetch('''	SELECT Users.id FROM Users WHERE Users.Name = "%s"'''%user_name)[0][0]
-		return User(user_id,user_name)
+		return {"id":user_id,"name":user_name}
 
 	def get_repo(self, repo_id):
 		repo = self.fetch('''SELECT Repos.Name FROM Repos WHERE Repos.id = %s'''%repo_id)[0]
-		return Repo(repo_id,repo[0])
+		return {"id":repo["id"]}
 	
 	def execute(self,sql):
 		cursor = self.connect.cursor()
@@ -54,17 +46,17 @@ class Db():
 		return cursor.fetchall()
 
 	def get_commits(self,condition):
-		commits = self.fetch('''	SELECT Commits.id, Commits.Name, Commits.Message, Commits.Parent, Branches.Name, Branches.id, Users.Name, Repos.Name
+		commits = self.fetch('''	SELECT Commits.id, Commits.Name, Commits.Message, Commits.Parent, Branches.Name, Branches.id, Users.Name, Repos.Name, Commits.MergedFrom
 							From Commits JOIN Branches ON Branches.id = Commits.Branch 
 							JOIN Users ON Users.id = Commits.User 
 							JOIN Repos ON Repos.id = Branches.Repo 
 							WHERE %s'''% condition)
-		return [Commit(commit[0],commit[1],commit[2],commit[3],commit[4],commit[5],commit[6],commit[7]) for commit in commits]
+		return [{"id":commit[0],"name":commit[1],"message":commit[2],"parent":commit[3],"branch":{"name":commit[4],"id":commit[5]},"user":commit[6],"repo":commit[7],"mergedFrom":commit[8]} for commit in commits]
 
 	def validate(self, user, password):
 		encrypted = self.fetch('''	SELECT Users.Name,Users.Password
 							From Users 
-							WHERE Users.Name="%s"'''%user.name)[0][1]
+							WHERE Users.Name="%s"'''%user[name])[0][1]
 		actual = crypto.decrypt(encrypted.encode()).decode()
 		return actual == password
 
@@ -80,30 +72,30 @@ class Db():
 	def get_user_repos(self, user):
 		repos = self.fetch('''	SELECT Repos.Name
 							From Repos JOIN Connections ON Repos.id = Connections.Repo 
-							JOIN Users ON Users.id = Connections.User WHERE Users.Name="%s"'''%user.name)
+							JOIN Users ON Users.id = Connections.User WHERE Users.Name="%s"'''%user["name"])
 		return repos
 
 	def add_user_to_repo(self, user, repo):
-		self.execute('''	INSERT INTO Connections (Repo,User) VALUES("%s","%s")'''%(self.get_id(repo),user.idd))
+		self.execute('''	INSERT INTO Connections (Repo,User) VALUES("%s","%s")'''%(repo["id"],user["id"]))
 
 	def add_repo(self, owner, repo_name):
 		self.execute('''	INSERT INTO Repos (Name) VALUES("%s")'''%(repo_name))
 		repo = self.fetch('''	SELECT Repos.id, Repos.Name From Repos ORDER BY ID DESC''')[0]
-		repo = Repo(repo[0],repo[1])
+		repo = {"id": repo[0],"name":repo[1]}
 		self.add_user_to_repo(owner,repo)
 		branch = self.add_branch("Main",-1,owner,repo)
 		self.add_commit("Init","Initial Commit",branch,-1,owner)
 		return repo
 
 	def add_branch(self, branch_name,parent,owner,repo):
-		self.execute('''	INSERT INTO Branches (Name,Repo,Parent,Owner) 
-			VALUES("%s","%s","%s","%s")'''%(branch_name,self.get_id(repo),parent,owner.idd))
+		self.execute('''	INSERT INTO Branches (Name,`,Parent,Owner) 
+			VALUES("%s","%s","%s","%s")'''%(branch_name,repo["id"],parent,owner["id"]))
 		branch = self.fetch('''	SELECT * From Branches ORDER BY ID DESC''')[0]
 		return Branch(branch[0],branch[1],branch[3],branch[4],branch[2])
 
 	def add_commit(self, commit_name, commit_message, branch,parent,user):
 		self.execute('''	INSERT INTO Commits (Name,Branch,Parent,User,Message) 
-							VALUES("%s","%s","%s","%s","%s")'''%(commit_name,self.get_id(branch),parent,user.idd,commit_message))
+							VALUES("%s","%s","%s","%s","%s")'''%(commit_name,branch["id"],parent,user["id"],commit_message))
 
 crypto = Crypto()
 crypto.get_security()
