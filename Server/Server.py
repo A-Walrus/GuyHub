@@ -1,8 +1,16 @@
-import Database 
+import Database
 import json
+from http.server import HTTPServer, BaseHTTPRequestHandler
 
 db = Database.Db("GuyHub.db")
 
-# db.add_user("Ron","PassRon")
-# db.add_user_to_repo({"id":5},{"id":3})
-print(json.dumps(db.get_commits("Repos.id=1")))
+class Serv(BaseHTTPRequestHandler):
+	def do_GET(self):
+		print(self.path)
+		self.send_response(200)
+		self.end_headers()
+		self.wfile.write(json.dumps(db.get_commits("Repos.ID=1")).encode())
+
+httpd = HTTPServer(('10.0.0.23',8080),Serv)
+httpd.serve_forever()
+

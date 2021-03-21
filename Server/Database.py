@@ -56,7 +56,7 @@ class Db():
 	def validate(self, user, password):
 		encrypted = self.fetch('''	SELECT Users.Name,Users.Password
 							From Users 
-							WHERE Users.Name="%s"'''%user[name])[0][1]
+							WHERE Users.Name="%s"'''%user["name"])[0][1]
 		actual = crypto.decrypt(encrypted.encode()).decode()
 		return actual == password
 
@@ -88,10 +88,9 @@ class Db():
 		return repo
 
 	def add_branch(self, branch_name,parent,owner,repo):
-		self.execute('''	INSERT INTO Branches (Name,`,Parent,Owner) 
+		self.execute('''	INSERT INTO Branches (Name,Repo,Parent,Owner) 
 			VALUES("%s","%s","%s","%s")'''%(branch_name,repo["id"],parent,owner["id"]))
 		branch = self.fetch('''	SELECT * From Branches ORDER BY ID DESC''')[0]
-		return Branch(branch[0],branch[1],branch[3],branch[4],branch[2])
 
 	def add_commit(self, commit_name, commit_message, branch,parent,user):
 		self.execute('''	INSERT INTO Commits (Name,Branch,Parent,User,Message) 

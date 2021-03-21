@@ -3,20 +3,25 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 import sys
 import json
-import math
+from http.client import HTTPConnection
 
 SIZE = 24
 
 class Cell(QWidget):
-	def __init__(self,infos):
-		super().__init__()
-		self.initUI()
+	def __init__(self,infos,*args,**kwargs):
+		super().__init__(*args,**kwargs)
 		self.infos = infos
-
-	def initUI(self):
 		self.setFixedSize(SIZE,SIZE)
 
 	def paintEvent(self, event):
+		# paint base object
+		super().paintEvent(event)
+		opt = QStyleOption()
+		opt.initFrom(self)
+		p = QPainter(self)
+		s = self.style()
+		s.drawPrimitive(QStyle.PE_Widget, opt, p, self) 
+
 		qp = QPainter()
 		qp.begin(self)
 		qp.setRenderHint(QPainter.Antialiasing)
@@ -59,19 +64,19 @@ class CommitLine(QWidget):
 		self.label.setFixedWidth(150)
 		hbox.addWidget(self.spacer)
 		hbox.addWidget(self.label)
-		for i,cell in enumerate(cells):
+		for i,cell_data in enumerate(cells):
 			if len(list(filter(lambda x: x!=[],cells[i:])))!=0:
-				hbox.addWidget(Cell(cell))
+				hbox.addWidget(Cell(cell_data))
 		hbox.addWidget(QWidget())
 		self.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed))
 		self.setFixedHeight(SIZE)
 
 	def mousePressEvent(self,event):
 		self.clicked.emit(self.index)
-		self.selected = True
+		self.setStyleSheet("background-color: #444466;")
 
 	def unselect(self):
-		self.selected = False
+		self.setStyleSheet("")
 
 class Tree(QScrollArea):
 	def __init__(self,commits,*args,**kwargs):
@@ -200,9 +205,12 @@ def main():
 	win = QWidget()
 	vbox = QVBoxLayout()
 
-
-	data = '''[{"id": 1, "name": "Init", "message": "Initial Commit", "parent": null, "branch": {"name": "Main", "id": 1}, "user": "Elon", "repo": "Tesla", "mergedFrom": null}, {"id": 4, "name": "Bugfix", "message": "I fixed a bug", "parent": 1, "branch": {"name": "Main", "id": 1}, "user": "Elon", "repo": "Tesla", "mergedFrom": null}, {"id": 5, "name": "Start Feature", "message": "start", "parent": 4, "branch": {"name": "Feature", "id": 4}, "user": "Elon", "repo": "Tesla", "mergedFrom": null}, {"id": 6, "name": "Buf gix", "message": "bugfix", "parent": 4, "branch": {"name": "Main", "id": 1}, "user": "Elon", "repo": "Tesla", "mergedFrom": null}, {"id": 7, "name": "Continue Feature", "message": "continue", "parent": 5, "branch": {"name": "Feature", "id": 4}, "user": "Elon", "repo": "Tesla", "mergedFrom": null}, {"id": 8, "name": "Continuer Feature", "message": "continuing", "parent": 7, "branch": {"name": "Feature", "id": 4}, "user": "Elon", "repo": "Tesla", "mergedFrom": null}, {"id": 9, "name": "Continuerer Feature", "message": "continuinging", "parent": 8, "branch": {"name": "Feature", "id": 4}, "user": "Elon", "repo": "Tesla", "mergedFrom": null}, {"id": 10, "name": "Bug Add", "message": "bugadd", "parent": 6, "branch": {"name": "Main", "id": 1}, "user": "Elon", "repo": "Tesla", "mergedFrom": null}, {"id": 11, "name": "Bug Add", "message": "bugadd", "parent": 6, "branch": {"name": "Feature2", "id": 5}, "user": "Elon", "repo": "Tesla", "mergedFrom": 9}, {"id": 12, "name": "Test 10", "message": "test", "parent": 10, "branch": {"name": "Main", "id": 1}, "user": "Elon", "repo": "Tesla", "mergedFrom": null}, {"id": 13, "name": "Test 11", "message": "test", "parent": 11, "branch": {"name": "Main", "id": 1}, "user": "Elon", "repo": "Tesla", "mergedFrom": null}, {"id": 14, "name": "Test 12", "message": "test", "parent": 12, "branch": {"name": "Main", "id": 1}, "user": "Elon", "repo": "Tesla", "mergedFrom": null}, {"id": 15, "name": "Test 13", "message": "test", "parent": 13, "branch": {"name": "Main", "id": 1}, "user": "Elon", "repo": "Tesla", "mergedFrom": null}, {"id": 16, "name": "Test 14", "message": "test", "parent": 14, "branch": {"name": "Main", "id": 1}, "user": "Elon", "repo": "Tesla", "mergedFrom": null}, {"id": 17, "name": "Test 15", "message": "test", "parent": 15, "branch": {"name": "Main", "id": 1}, "user": "Elon", "repo": "Tesla", "mergedFrom": 11}, {"id": 18, "name": "Test 16", "message": "test", "parent": 16, "branch": {"name": "Main", "id": 1}, "user": "Elon", "repo": "Tesla", "mergedFrom": null}, {"id": 19, "name": "Test 17", "message": "test", "parent": 17, "branch": {"name": "Main", "id": 1}, "user": "Elon", "repo": "Tesla", "mergedFrom": null}, {"id": 20, "name": "Test 18", "message": "test", "parent": 18, "branch": {"name": "Main", "id": 1}, "user": "Elon", "repo": "Tesla", "mergedFrom": null}, {"id": 21, "name": "Test 19", "message": "test", "parent": 19, "branch": {"name": "Main", "id": 1}, "user": "Elon", "repo": "Tesla", "mergedFrom": null}]'''
-
+	connection = HTTPConnection("10.0.0.23:8080")
+	connection.request("GET","/")
+	response = connection.getresponse()
+	data = response.read().decode()
+	connection.close
+	
 	tree = Tree(json.loads(data))
 
 	vbox.addWidget(tree)
