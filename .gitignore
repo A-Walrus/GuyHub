@@ -4,3 +4,7 @@ Server/key.txt
 Server/__pycache__/
 
 General/__pycache__/
+
+Server/private.key
+
+Server/selfsigned.crt
