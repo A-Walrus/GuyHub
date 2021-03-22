@@ -3,7 +3,8 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 import sys
 import json
-from http.client import HTTPConnection
+from http.client import HTTPSConnection
+import ssl
 
 SIZE = 24
 
@@ -207,8 +208,8 @@ def main():
 	win = QWidget()
 	vbox = QVBoxLayout()
 
-	connection = HTTPConnection("10.0.0.23:8080")
-	connection.request("GET","/",headers={"user":"Guy"})
+	connection = HTTPSConnection("10.0.0.23:8080",context=ssl._create_unverified_context())
+	connection.request("GET","/")
 	response = connection.getresponse()
 	data = response.read().decode()
 	connection.close
