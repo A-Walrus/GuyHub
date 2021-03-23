@@ -1,24 +1,6 @@
 
 import sqlite3 as lite
-from cryptography.fernet import Fernet
-
-
-class Crypto():
-	def init_security(self):
-		self.key = Fernet.generate_key()
-		self.cipher_suite = Fernet(self.key)
-		with open("key.txt","w") as f:
-			f.write(self.key.decode())
-	def get_security(self):
-		with open(r"D:\Users\Guy\School\cyber\GuyHub\server\key.txt","r") as f:
-			self.key = f.read()
-			self.cipher_suite = Fernet(self.key)
-
-	def decrypt(self,encrypted):
-		return self.cipher_suite.decrypt(encrypted)
-
-	def encrypt(self,data):
-		return self.cipher_suite.encrypt(data.encode())
+from passlib.hash import pbkdf2_sha256
 
 
 class Db():
@@ -54,11 +36,10 @@ class Db():
 		return [{"id":commit[0],"name":commit[1],"message":commit[2],"parent":commit[3],"branch":{"name":commit[4],"id":commit[5]},"user":commit[6],"repo":commit[7],"mergedFrom":commit[8]} for commit in commits]
 
 	def validate(self, user, password):
-		encrypted = self.fetch('''	SELECT Users.Name,Users.Password
+		stored = self.fetch('''	SELECT Users.Name,Users.Password
 							From Users 
 							WHERE Users.Name="%s"'''%user["name"])[0][1]
-		actual = crypto.decrypt(encrypted.encode()).decode()
-		return actual == password
+		return pbkdf2_sha256.verify(password,stored)
 
 	def set_password(self, user, password):
 		encrypted = crypto.encrypt(password).decode()
@@ -95,6 +76,3 @@ class Db():
 	def add_commit(self, commit_name, commit_message, branch,parent,user):
 		self.execute('''	INSERT INTO Commits (Name,Branch,Parent,User,Message) 
 							VALUES("%s","%s","%s","%s","%s")'''%(commit_name,branch["id"],parent,user["id"],commit_message))
-
-crypto = Crypto()
-crypto.get_security()
