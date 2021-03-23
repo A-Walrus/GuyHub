@@ -208,7 +208,7 @@ def main():
 	win = QWidget()
 	vbox = QVBoxLayout()
 
-	connection = HTTPSConnection("10.0.0.23:8080",context=ssl._create_unverified_context())
+	connection = HTTPSConnection("localhost:8080",context=ssl._create_unverified_context())
 	connection.request("GET","/")
 	response = connection.getresponse()
 	data = response.read().decode()
