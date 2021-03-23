@@ -8,3 +8,5 @@ General/__pycache__/
 Server/private.key
 
 Server/selfsigned.crt
+
+Client/__pycache__/ui.cpython-37.pyc

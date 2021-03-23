@@ -33,7 +33,7 @@ class Db():
 
 	def get_repo(self, repo_id):
 		repo = self.fetch('''SELECT Repos.Name FROM Repos WHERE Repos.id = %s'''%repo_id)[0]
-		return {"id":repo["id"]}
+		return {"id":repo_id,"name":repo[0]}
 	
 	def execute(self,sql):
 		cursor = self.connect.cursor()

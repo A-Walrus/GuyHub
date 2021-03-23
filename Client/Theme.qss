@@ -888,6 +888,16 @@ QLabel:disabled {
   color: #787878;
 }
 
+Header {
+  background-color: #19232D;
+  border: 0px solid #32414B;
+  padding: 2px;
+  margin: 0px;
+  color: #F0F0F0;
+  font-weight: bold;
+}
+
+
 /* QTextBrowser -----------------------------------------------------------
 
 https://doc.qt.io/qt-5/stylesheet-examples.html#customizing-qabstractscrollarea
