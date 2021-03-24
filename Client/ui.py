@@ -262,3 +262,12 @@ class RepoView(QWidget):
 		self.setLayout(main_vbox)
 		self.show()
 		self.tree.select_line(len(self.data["commits"])-1)
+
+class ErrorMessage(QMessageBox):
+	def __init__(self,error,buttons=QMessageBox.Ok,*args,**kwargs):
+		super().__init__(*args,**kwargs)
+		self.setWindowTitle("Error")
+		self.setText(error)
+		self.setIcon(QMessageBox.Warning)
+		self.setStandardButtons(buttons)
+		x = self.exec_()

@@ -9,6 +9,38 @@ import ssl
 from ui import *
 
 
+class http_handler():
+	def __init__(self):
+		self.connection = HTTPSConnection("localhost:8080 ",context=ssl._create_unverified_context())
+		self.token = ""
+		
+
+	def login(self,user_name,password):
+		self.connection.request("POST","/login",json.dumps({"name":user_name,"pass":password}),{'Content-type': 'application/json'})
+		response = self.connection.getresponse()
+		data = response.read().decode()
+		data = self.error_handle(data)
+		if data:
+			self.token = data["token"]
+
+	def request(self,url):
+		self.connection.request("GET",url,None,{'token':self.token})
+		response = self.connection.getresponse()
+		data = response.read().decode()
+		return self.error_handle(data)
+
+		
+	def error_handle(self,data):
+		data = json.loads(data)
+		if "error" in data:
+			ErrorMessage(data["error"])
+		else:
+			return data
+
+	def close(self):
+		self.connection.close()
+
+
 def main():
 	app = QApplication(sys.argv)
 	file = QFile("theme.qss")
@@ -16,25 +48,15 @@ def main():
 	stream = QTextStream(file)
 	app.setStyleSheet(stream.readAll())
 
+	http = http_handler()
 
-	connection = HTTPSConnection("localhost:8080 ",context=ssl._create_unverified_context())
-	foo = {'name': 'Elon','pass':'$TSLA'}
-	json_data = json.dumps(foo)
+	http.login("Elon","$TSLA")
 
-	connection.request("POST","/login",json_data,{'Content-type': 'application/json'})
-	response = connection.getresponse()
-	token = json.loads(response.read().decode())["token"]
+	data = http.request("/repos/1")
+
+	http.close()
 	
-	# token = "gAAAAABgWkeEiO_gAmi-tmS4YF_ImH8IkALN7xZA993BtHaqaHc_zZ3Dfe-I8wQJ5cJkwmSJ6t5UCn3wFkokUmI0N2KyllQikQ=="
-
-	connection.request("GET","/repos/1",None,{'token':token})
-	response = connection.getresponse()
-	data = response.read().decode()
-
-	connection.close()
-	
-	print(json.loads(data))
-	win = RepoView(json.loads(data))
+	win = RepoView(data)
 	
 	sys.exit(app.exec_())
 
