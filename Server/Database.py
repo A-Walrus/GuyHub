@@ -1,4 +1,3 @@
-
 import sqlite3 as lite
 from passlib.hash import pbkdf2_sha256
 

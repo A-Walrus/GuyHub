@@ -81,10 +81,11 @@ class Serv(BaseHTTPRequestHandler):
 			if db.validate(data["name"],data["pass"]):
 				return Result('json',json.dumps({"token":self.get_user_token(data["name"])}).encode()) 
 			else:
-				return Result('json',json.dumps({"error":"incorrect password"}).encode())
+				return Result('json',json.dumps({"error":"Incorrect password!"}).encode())
 		else:
-			db.add_user(data["name"],data["pass"])
-			return Result('json',json.dumps({"token":self.get_user_token(data["name"])}).encode())
+			# db.add_user(data["name"],data["pass"])
+			# return Result('json',json.dumps({"token":self.get_user_token(data["name"])}).encode())
+			return Result('json',json.dumps({"error":"User doesn't exist"}).encode())
 
 
 	def do_POST(self):

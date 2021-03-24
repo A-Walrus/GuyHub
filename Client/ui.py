@@ -2,9 +2,34 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 import sys
+import qtawesome as qta
 
 SIZE = 24
 
+def get_app():
+	app = QApplication(sys.argv)
+	file = QFile("theme.qss")
+	file.open(QFile.ReadOnly | QFile.Text)
+	stream = QTextStream(file)
+	app.setStyleSheet(stream.readAll())
+	return app
+
+
+class icon_input_line(QWidget):
+	def getText(self):
+		return self.line.text()
+
+	def __init__(self,text,mode,icon_name,*args,**kwargs):
+		super().__init__(*args,**kwargs)
+		layout = QHBoxLayout()
+		self.setLayout(layout)
+		self.line = QLineEdit()
+		self.line.setPlaceholderText(text)
+		self.line.setEchoMode(mode)
+		icon = qta.IconWidget()
+		icon.setIcon(qta.icon(icon_name,color='white'))
+		layout.addWidget(icon)
+		layout.addWidget(self.line)
 
 class Header(QLabel):
 	def __init__(self,*args,**kwargs):
@@ -221,7 +246,9 @@ class RepoView(QWidget):
 
 	def __init__(self,data,*args,**kwargs):
 		super().__init__(*args,**kwargs)
+		self.show()
 		self.data = data
+
 
 		main_vbox = QVBoxLayout()
 
@@ -244,7 +271,6 @@ class RepoView(QWidget):
 		self.branch = Header("Branch")
 		self.name = Header("Commit")
 
-		
 		info_vbox.addWidget(self.name)
 		info_vbox.addWidget(self.branch)
 		info_vbox.addWidget(self.user)
@@ -257,10 +283,9 @@ class RepoView(QWidget):
 		main_vbox.addWidget(Header(self.data["repo"]["name"]))
 		main_vbox.addWidget(hbox_w)
 
-		
+		self.setWindowTitle("Repo - %s"%self.data["repo"]["name"])
 
 		self.setLayout(main_vbox)
-		self.show()
 		self.tree.select_line(len(self.data["commits"])-1)
 
 class ErrorMessage(QMessageBox):
@@ -271,3 +296,45 @@ class ErrorMessage(QMessageBox):
 		self.setIcon(QMessageBox.Warning)
 		self.setStandardButtons(buttons)
 		x = self.exec_()
+
+class Login(QMainWindow):
+	submit = pyqtSignal(str,str) # username, password
+
+	def set_label(self,textt,color="white"):
+		self.label.setText(textt)
+		self.label.setStyleSheet("color: %s"%color)
+
+
+	def __init__(self,*args,**kwargs):
+		super().__init__(*args,**kwargs)
+		self.show()
+		self.setWindowTitle("Login")
+
+		window = QWidget()
+		vbox =  QVBoxLayout()
+		window.setLayout(vbox)
+
+		self.label = Header("Hello User!")
+		self.label.setAlignment(Qt.AlignCenter)
+		vbox.addWidget(self.label)
+		
+		self.username = icon_input_line("username",QLineEdit.EchoMode.Normal,"fa5s.user")
+		self.password = icon_input_line("password",QLineEdit.EchoMode.Password,"fa5s.lock")
+
+		vbox.addWidget(self.username)
+		vbox.addWidget(self.password)
+
+		self.button = QPushButton("Login")
+		self.button.clicked.connect(self.on_press)
+		vbox.addWidget(self.button)
+
+		self.setCentralWidget(window)
+
+	def keyPressEvent(self, event):
+		if self.password.line.hasFocus():
+			if event.key() == Qt.Key_Return:
+				self.on_press()
+
+	def on_press(self):
+		self.submit.emit(self.username.getText(),self.password.getText())
+

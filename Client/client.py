@@ -8,6 +8,10 @@ import ssl
 
 from ui import *
 
+class Error():
+	def __init__(self,msg):
+		self.msg = msg
+
 
 class http_handler():
 	def __init__(self):
@@ -20,8 +24,11 @@ class http_handler():
 		response = self.connection.getresponse()
 		data = response.read().decode()
 		data = self.error_handle(data)
-		if data:
+		if not isinstance(data, Error):
 			self.token = data["token"]
+			return None
+		else:
+			return data
 
 	def request(self,url):
 		self.connection.request("GET",url,None,{'token':self.token})
@@ -33,7 +40,7 @@ class http_handler():
 	def error_handle(self,data):
 		data = json.loads(data)
 		if "error" in data:
-			ErrorMessage(data["error"])
+			return Error(data["error"])
 		else:
 			return data
 
@@ -41,23 +48,37 @@ class http_handler():
 		self.connection.close()
 
 
+def submit(username,password):
+	if username == "" or password =="":
+		login.set_label("Username and password cannot be empty!")
+	else:
+		login.set_label("Logging you in!")
+		QCoreApplication.processEvents()
+		res = http.login(username,password)
+		if isinstance(res,Error):
+			login.set_label(res.msg,"#C30052")
+		else:
+			login.set_label("Success!")
+			QCoreApplication.processEvents()
+			data = http.request("/repos/1")
+			if not isinstance(data, Error):
+				login.close()
+				print("HI")
+				global repo
+				repo = RepoView(data)
+			else:
+				login.set_label(data.msg)
+
+
 def main():
-	app = QApplication(sys.argv)
-	file = QFile("theme.qss")
-	file.open(QFile.ReadOnly | QFile.Text)
-	stream = QTextStream(file)
-	app.setStyleSheet(stream.readAll())
-
+	app = get_app()
+	global http
 	http = http_handler()
+	global login
+	login = Login()
+	login.submit.connect(submit)
 
-	http.login("Elon","$TSLA")
 
-	data = http.request("/repos/1")
-
-	http.close()
-	
-	win = RepoView(data)
-	
 	sys.exit(app.exec_())
 
 
