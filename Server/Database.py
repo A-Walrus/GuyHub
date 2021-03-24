@@ -13,6 +13,9 @@ class Db():
 		user_id  = self.fetch('''	SELECT Users.id FROM Users WHERE Users.Name = "%s"'''%user_name)[0][0]
 		return {"id":user_id,"name":user_name}
 
+	def user_exists(self,user_name):
+		return self.fetch('''	SELECT * FROM Users WHERE Users.Name = "%s"'''%user_name)!=[]
+
 	def get_repo(self, repo_id):
 		repo = self.fetch('''SELECT Repos.Name FROM Repos WHERE Repos.id = %s'''%repo_id)[0]
 		return {"id":repo_id,"name":repo[0]}
@@ -38,7 +41,7 @@ class Db():
 	def validate(self, user, password):
 		stored = self.fetch('''	SELECT Users.Name,Users.Password
 							From Users 
-							WHERE Users.Name="%s"'''%user["name"])[0][1]
+							WHERE Users.Name="%s"'''%user)[0][1]
 		return pbkdf2_sha256.verify(password,stored)
 
 	def set_password(self, user, password):
@@ -46,14 +49,14 @@ class Db():
 		self.execute('''	UPDATE Users SET Password = "%s" WHERE Users.Name  = "%s"'''% (encrypted,user))
 
 	def add_user(self, user_name, password):
-		encrypted = crypto.encrypt(password).decode()
+		encrypted = pbkdf2_sha256.hash(password)
 		self.execute('''	INSERT INTO Users (Name,Password) VALUES("%s","%s")'''%(user_name,encrypted))
 		return self.get_user(user_name)
 
-	def get_user_repos(self, user):
+	def get_user_repos(self, user_name):
 		repos = self.fetch('''	SELECT Repos.Name,Repos.ID
 							From Repos JOIN Connections ON Repos.id = Connections.Repo 
-							JOIN Users ON Users.id = Connections.User WHERE Users.Name="%s"'''%user["name"])
+							JOIN Users ON Users.id = Connections.User WHERE Users.Name="%s"'''%user_name)
 		return [{"name": repo[0],"id":repo[1]} for repo in repos]
 
 	def add_user_to_repo(self, user, repo):

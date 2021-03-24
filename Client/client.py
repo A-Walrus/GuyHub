@@ -9,9 +9,6 @@ import ssl
 from ui import *
 
 
-
-
-
 def main():
 	app = QApplication(sys.argv)
 	file = QFile("theme.qss")
@@ -21,12 +18,22 @@ def main():
 
 
 	connection = HTTPSConnection("localhost:8080 ",context=ssl._create_unverified_context())
-	connection.request("GET","/repos/1")
+	foo = {'name': 'Elon','pass':'$TSLA'}
+	json_data = json.dumps(foo)
+
+	connection.request("POST","/login",json_data,{'Content-type': 'application/json'})
+	response = connection.getresponse()
+	token = json.loads(response.read().decode())["token"]
+	
+	# token = "gAAAAABgWkeEiO_gAmi-tmS4YF_ImH8IkALN7xZA993BtHaqaHc_zZ3Dfe-I8wQJ5cJkwmSJ6t5UCn3wFkokUmI0N2KyllQikQ=="
+
+	connection.request("GET","/repos/1",None,{'token':token})
 	response = connection.getresponse()
 	data = response.read().decode()
+
 	connection.close()
 	
-	
+	print(json.loads(data))
 	win = RepoView(json.loads(data))
 	
 	sys.exit(app.exec_())
