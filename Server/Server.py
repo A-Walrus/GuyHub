@@ -61,16 +61,7 @@ class Serv(BaseHTTPRequestHandler):
 				}
 
 		path = self.split()
-
-		print(self.headers)
-		if "token" in self.headers:
-			self.token = self.headers["token"]
-			try:
-				self.user = fernet.decrypt(self.token.encode(),60*60).decode() # token valid for one hour
-				if path[0] in paths:
-					paths[path[0]](path[1::]).run(self)
-			except InvalidToken:
-				Result('json',json.dumps({"error":"InvalidToken"}).encode()).run(self)
+		Result('json',json.dumps({"error":"No token"}).encode()).run(self)
 
 		
 
@@ -83,8 +74,6 @@ class Serv(BaseHTTPRequestHandler):
 			else:
 				return Result('json',json.dumps({"error":"Incorrect password!"}).encode())
 		else:
-			# db.add_user(data["name"],data["pass"])
-			# return Result('json',json.dumps({"token":self.get_user_token(data["name"])}).encode())
 			return Result('json',json.dumps({"error":"User doesn't exist"}).encode())
 
 
