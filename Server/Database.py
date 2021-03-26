@@ -5,7 +5,7 @@ from passlib.hash import pbkdf2_sha256
 class Db():
 	def __init__(self,path):
 		self.path = path
-		self.connect = lite.connect(self.path)
+		self.connect = lite.connect(self.path,check_same_thread=False)
 
 
 	def get_user(self,user_name):

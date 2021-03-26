@@ -6,21 +6,31 @@ import json
 import requests
 import ssl
 from ui import *
+from urllib3.exceptions import InsecureRequestWarning
 
+requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning) # supress ssl certificate warning, because I trust my own server
+
+def get_session(auth):
+	s = requests.Session()
+	s.verify = False
+	s.auth = (auth[0],auth[1])
+	return s
 
 def submit(username,password):
 	if username == "" or password =="":
 		login.set_label("Username and password cannot be empty!")
 	else:
-		for i in range(5):
-				r = requests.get("https://localhost:8080/repos/%s"%i,verify=False,headers={'name' : 'Elon','pass':'$TSLA'})
-				print(r.json())
+		s = get_session((username,password))
+		r = s.get("https://localhost:5000/profile")
+		if r.status_code==200:
+			login.set_label("Success")
+			print(r.json())
+		else:
+			login.set_label("Username or Password incorrect!")
 
 
 def main():
 	app = get_app()
-# 	global http
-# 	http = http_handler()
 	global login
 	login = Login()
 	login.submit.connect(submit)
