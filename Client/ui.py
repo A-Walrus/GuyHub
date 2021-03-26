@@ -6,6 +6,19 @@ import qtawesome as qta
 
 SIZE = 24
 
+class BoxLayout(QWidget):
+	def __init__(self,direction,*args,**kwargs):
+		super().__init__(*args,**kwargs)
+		if direction == "h":
+			self.layout = QHBoxLayout()
+		else:
+			self.layout=QVBoxLayout()
+		self.setLayout(self.layout)
+
+	def addWidget(self,widget,*args,**kwargs):
+		self.layout.addWidget(widget,*args,**kwargs)
+
+
 def get_app():
 	app = QApplication(sys.argv)
 	file = QFile("theme.qss")
@@ -87,6 +100,7 @@ class CommitLine(QWidget):
 		hbox.setContentsMargins(0, 0, 0, 0)
 		hbox.setSpacing(0)
 		self.setLayout(hbox)
+
 		self.spacer = QWidget()
 		self.spacer.setFixedWidth(10)
 		self.label = QLabel(data["name"])
@@ -211,8 +225,7 @@ class Tree(QScrollArea):
 			
 
 	def initUI(self):
-		self.widget = QWidget()
-		self.vbox = QVBoxLayout()
+		self.vbox = BoxLayout("v")
 		
 		tree = self.calculate_tree()
 
@@ -224,14 +237,13 @@ class Tree(QScrollArea):
 			self.lines.append(line)
 			self.vbox.addWidget(line)
 
-		self.vbox.setSpacing(0)
+		self.vbox.layout.setSpacing(0)
 		self.vbox.setContentsMargins(0, 0, 0, 0)
 		self.vbox.addWidget(QWidget()) # expanding spacer
-		self.widget.setLayout(self.vbox) 
 		self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
 		self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 		self.setWidgetResizable(True)
-		self.setWidget(self.widget)
+		self.setWidget(self.vbox)
 		self.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding))
 
 class RepoView(QWidget):
@@ -252,20 +264,16 @@ class RepoView(QWidget):
 		
 		main_vbox = QVBoxLayout()
 
-		hbox = QHBoxLayout()
-		hbox.setContentsMargins(0,0,0,0)
-		hbox_w = QWidget()
-		hbox_w.setLayout(hbox)
+		hbox = BoxLayout("h")
+		hbox.layout.setContentsMargins(0,0,0,0)
 
 		self.tree = Tree(self.data["commits"])
 		self.tree.selected.connect(self.update_info)
 		hbox.addWidget(self.tree)
 
 		
-		info_vbox = QVBoxLayout()
-		info_vbox.setContentsMargins(0,0,0,0)
-		info = QWidget()
-		info.setLayout(info_vbox)
+		info = BoxLayout("v")
+		info.layout.setContentsMargins(0,0,0,0)
 
 		self.message= QTextBrowser()
 		self.message.setText("Commit Message")
@@ -274,16 +282,16 @@ class RepoView(QWidget):
 		self.branch = Header("Branch")
 		self.name = Header("Commit")
 
-		info_vbox.addWidget(self.name)
-		info_vbox.addWidget(self.branch)
-		info_vbox.addWidget(self.user)
-		info_vbox.addWidget(self.message)
+		info.addWidget(self.name)
+		info.addWidget(self.branch)
+		info.addWidget(self.user)
+		info.addWidget(self.message)
 
 		hbox.addWidget(info)
 
 
 		main_vbox.addWidget(Header(self.data["repo"]["name"]))
-		main_vbox.addWidget(hbox_w)
+		main_vbox.addWidget(hbox)
 
 		self.setLayout(main_vbox)
 
@@ -301,25 +309,22 @@ class Login(QWidget):
 		self.setWindowTitle("Login")
 		self.show()
 
-		window = QWidget()
+		window = BoxLayout("v")
 		window.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
-
-		vbox =  QVBoxLayout()
-		window.setLayout(vbox)
 
 		self.label = Header("Hello User!")
 		self.label.setAlignment(Qt.AlignCenter)
-		vbox.addWidget(self.label)
+		window.addWidget(self.label)
 		
 		self.username = icon_input_line("username",QLineEdit.EchoMode.Normal,"fa5s.user")
-		vbox.addWidget(self.username)
+		window.addWidget(self.username)
 
 		self.password = icon_input_line("password",QLineEdit.EchoMode.Password,"fa5s.lock")
-		vbox.addWidget(self.password)
+		window.addWidget(self.password)
 
 		self.button = QPushButton("Login")
 		self.button.clicked.connect(self.on_press)
-		vbox.addWidget(self.button)
+		window.addWidget(self.button)
 
 		grid = QGridLayout()
 		grid.addWidget(window,1,1)
@@ -333,3 +338,4 @@ class Login(QWidget):
 
 	def on_press(self):
 		self.submit.emit(self.username.getText(),self.password.getText())
+
