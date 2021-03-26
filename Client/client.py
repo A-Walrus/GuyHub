@@ -24,7 +24,9 @@ def submit(username,password):
 		r = s.get("https://localhost:5000/profile")
 		if r.status_code==200:
 			login.set_label("Success")
-			print(r.json())
+			r = s.get("https://localhost:5000/repos/1")
+			global repo
+			repo = RepoView(r.json())
 		else:
 			login.set_label("Username or Password incorrect!",True)
 

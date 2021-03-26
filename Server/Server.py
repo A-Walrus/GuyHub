@@ -22,9 +22,9 @@ def profile():
 
 @app.route("/repos/<int:repo_id>")
 @auth.login_required
-def repos_post(repo_id):
+def repos(repo_id):
 	if repo_id in [repo["id"] for repo in db.get_user_repos(auth.current_user())]:
-		return make_response(jsonify(db.get_commits("Repos.ID = %s"%repo_id)),200)
+		return {"commits":db.get_commits("Repos.ID = %s"%repo_id),"repo":db.get_repo(repo_id)}
 	else:
 		abort(401) # user doesn't ahve access to this repo
 
