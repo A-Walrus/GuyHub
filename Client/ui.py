@@ -300,9 +300,9 @@ class ErrorMessage(QMessageBox):
 class Login(QMainWindow):
 	submit = pyqtSignal(str,str) # username, password
 
-	def set_label(self,textt,color="white"):
+	def set_label(self,textt,error=False):
 		self.label.setText(textt)
-		self.label.setStyleSheet("color: %s"%color)
+		self.label.setStyleSheet("color: %s"%"#FFB900" if error else "white")
 
 
 	def __init__(self,*args,**kwargs):
@@ -331,7 +331,7 @@ class Login(QMainWindow):
 		self.setCentralWidget(window)
 
 	def keyPressEvent(self, event):
-		if self.password.line.hasFocus():
+		if self.password.line.hasFocus() or self.button.hasFocus() or self.username.line.hasFocus():
 			if event.key() == Qt.Key_Return:
 				self.on_press()
 

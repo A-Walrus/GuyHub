@@ -18,7 +18,7 @@ def get_session(auth):
 
 def submit(username,password):
 	if username == "" or password =="":
-		login.set_label("Username and password cannot be empty!")
+		login.set_label("Username and password cannot be empty!",True)
 	else:
 		s = get_session((username,password))
 		r = s.get("https://localhost:5000/profile")
@@ -26,7 +26,7 @@ def submit(username,password):
 			login.set_label("Success")
 			print(r.json())
 		else:
-			login.set_label("Username or Password incorrect!")
+			login.set_label("Username or Password incorrect!",True)
 
 
 def main():
