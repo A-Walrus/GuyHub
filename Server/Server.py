@@ -22,7 +22,7 @@ def profile():
 
 @app.route("/repos/<int:repo_id>")
 @auth.login_required
-def repos(repo_id):
+def repo(repo_id):
 	if repo_id in [repo["id"] for repo in db.get_user_repos(auth.current_user())]:
 		return {"commits":db.get_commits("Repos.ID = %s"%repo_id),"repo":db.get_repo(repo_id)}
 	else:

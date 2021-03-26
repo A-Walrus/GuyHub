@@ -10,8 +10,11 @@ from urllib3.exceptions import InsecureRequestWarning
 
 requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning) # supress ssl certificate warning, because I trust my own server
 
-
 class Client():
+
+	def get_url(self,path):
+		return "https://%s:%s/%s"%('localhost',5000,path)
+
 	def __init__(self):
 		self.app = get_app()
 		self.ui = Login()
@@ -29,10 +32,10 @@ class Client():
 			self.ui.set_label("Username and password cannot be empty!",True)
 		else:
 			s = self.get_session((username,password))
-			r = s.get("https://localhost:5000/profile")
+			r = s.get(self.get_url("profile"))
 			if r.status_code==200:
 				self.ui.set_label("Success")
-				r = s.get("https://localhost:5000/repos/1")
+				r = s.get(self.get_url("repos/1"))
 				self.ui.close()
 				self.ui = RepoView(r.json())
 			else:
