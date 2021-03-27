@@ -70,10 +70,14 @@ class Db():
 		self.add_commit("Init","Initial Commit",branch,-1,owner)
 		return repo
 
-	def add_branch(self, branch_name,parent,owner,repo):
-		self.execute('''	INSERT INTO Branches (Name,Repo,Parent,Owner) 
-			VALUES("%s","%s","%s","%s")'''%(branch_name,repo["id"],parent,owner["id"]))
+	def add_branch(self, branch_name,owner,repo):
+		self.execute('''	INSERT INTO Branches (Name,Repo,Owner) 
+			VALUES("%s","%s","%s","%s")'''%(branch_name,repo["id"],owner["id"]))
 		branch = self.fetch('''	SELECT * From Branches ORDER BY ID DESC''')[0]
+
+	def get_repo_branches(self,repo_id):
+		branches =  self.fetch('''	SELECT Branches.Name, Users.Name From Branches JOIN Users ON Branches.Owner = Users.ID WHERE Branches.Repo = %s'''%repo_id)
+		return [{"name":branch[0], "owner":branch[1]} for branch in branches]
 
 	def add_commit(self, commit_name, commit_message, branch,parent,user):
 		self.execute('''	INSERT INTO Commits (Name,Branch,Parent,User,Message) 
