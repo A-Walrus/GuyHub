@@ -363,7 +363,7 @@ class Login(QWidget):
 			self.set_label("Username and password cannot be empty!",True)
 		else:
 			main.client.set_auth((username,password))
-			self.set_label("Logging you in")
+			self.set_label("Logging you in!")
 			main.update_ui()
 			r = main.client.get("profile")
 			if r.status_code==200:

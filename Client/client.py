@@ -16,12 +16,11 @@ class Client():
 
 	def __init__(self):
 		self.auth  = ("User","Pass")
-		self.session = None
+		self.get_session()
 
 
 	def set_auth(self,auth):
-		self.auth = auth
-		self.get_session()
+		self.session.auth = auth
 
 	def get_session(self):
 		s = requests.Session()
