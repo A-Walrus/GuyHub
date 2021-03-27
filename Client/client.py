@@ -25,19 +25,22 @@ class Client():
 		s = requests.Session()
 		s.verify = False
 		s.auth = (auth[0],auth[1])
-		return s
+		self.session = s
 
 	def submit(self,username,password):
 		if username == "" or password =="":
 			self.ui.set_label("Username and password cannot be empty!",True)
 		else:
-			s = self.get_session((username,password))
-			r = s.get(self.get_url("profile"))
+			self.get_session((username,password))
+			r = self.session.get(self.get_url("profile"))
 			if r.status_code==200:
 				self.ui.set_label("Success")
-				r = s.get(self.get_url("repos/1"))
+				print(r.json())
 				self.ui.close()
-				self.ui = RepoView(r.json())
+				self.ui = Profile(r.json())
+				# r = self.session.get(self.get_url("repos/1"))
+				# self.ui.close()
+				# self.ui = RepoView(r.json())
 			else:
 				self.ui.set_label("Username or Password incorrect!",True)
 

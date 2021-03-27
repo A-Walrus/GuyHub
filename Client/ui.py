@@ -6,6 +6,9 @@ import qtawesome as qta
 
 SIZE = 24
 
+def getWindowTitle(page,item):
+	return "%s - %s"%(page,item)
+
 class BoxLayout(QWidget):
 	def __init__(self,direction,*args,**kwargs):
 		super().__init__(*args,**kwargs)
@@ -17,7 +20,6 @@ class BoxLayout(QWidget):
 
 	def addWidget(self,widget,*args,**kwargs):
 		self.layout.addWidget(widget,*args,**kwargs)
-
 
 def get_app():
 	app = QApplication(sys.argv)
@@ -259,7 +261,7 @@ class RepoView(QWidget):
 		super().__init__(*args,**kwargs)
 		self.data = data
 
-		self.setWindowTitle("Repo - %s"%self.data["repo"]["name"])
+		self.setWindowTitle(getWindowTitle(repo,self.data["repo"]["name"]))
 		self.show()
 		
 		main_vbox = QVBoxLayout()
@@ -322,6 +324,9 @@ class Login(QWidget):
 		self.password = icon_input_line("password",QLineEdit.EchoMode.Password,"fa5s.lock")
 		window.addWidget(self.password)
 
+		self.username.line.setText("Elon") # for testing
+		self.password.line.setText("$TSLA") # for testing
+
 		self.button = QPushButton("Login")
 		self.button.clicked.connect(self.on_press)
 		window.addWidget(self.button)
@@ -339,3 +344,31 @@ class Login(QWidget):
 	def on_press(self):
 		self.submit.emit(self.username.getText(),self.password.getText())
 
+class Profile(QWidget):
+	def __init__(self,data,*args,**kwargs):
+		super().__init__(*args,**kwargs)
+		self.data = data
+		self.setWindowTitle(getWindowTitle("Profile",self.data["user"]["name"]))
+		self.show()
+
+		info = BoxLayout("h")
+
+		self.repos = QListWidget()
+		for repo in self.data["repos"]:
+			self.repos.addItem(repo["name"])
+		
+		repo_view = BoxLayout("v")
+		repo_view.addWidget(Header("Repos"))
+		repo_view.addWidget(self.repos)
+
+		branch_view = BoxLayout("v")
+		branch_view.addWidget(Header("Branches"))
+		branch_view.addWidget(QListWidget())
+
+		info.addWidget(repo_view)
+		info.addWidget(branch_view)
+
+		layout = QVBoxLayout()
+		self.setLayout(layout)
+		layout.addWidget(Header("%s's Profile"%self.data["user"]["name"]))
+		layout.addWidget(info)

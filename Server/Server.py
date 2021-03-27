@@ -18,7 +18,7 @@ def verify_password(username,password):
 @app.route('/profile')
 @auth.login_required
 def profile():
-	return {"repos":db.get_user_repos(auth.current_user())}
+	return {"user":db.get_user(auth.current_user()),"repos":db.get_user_repos(auth.current_user())}
 
 @app.route("/repos/<int:repo_id>")
 @auth.login_required
