@@ -10,3 +10,5 @@ Server/private.key
 Server/selfsigned.crt
 
 Client/__pycache__/ui.cpython-37.pyc
+
+Client/__pycache__/

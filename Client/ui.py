@@ -3,8 +3,35 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 import sys
 import qtawesome as qta
+from client import *
+
+class Main():
+	def __init__(self):
+		self.app = get_app()
+		self.ui = None
+		self.client = Client()
+
+	def set_ui(self,ui):
+		if self.ui:
+			self.ui.close()
+			self.ui = ui
+		else:
+			self.ui = ui
+			sys.exit(self.app.exec_())
+
+	def update_ui(self):
+		QCoreApplication.processEvents()
+
+def get_app():
+	app = QApplication(sys.argv)
+	file = QFile("theme.qss")
+	file.open(QFile.ReadOnly | QFile.Text)
+	stream = QTextStream(file)
+	app.setStyleSheet(stream.readAll())
+	return app
 
 SIZE = 24
+
 
 def getWindowTitle(page,item):
 	return "%s - %s"%(page,item)
@@ -20,14 +47,6 @@ class BoxLayout(QWidget):
 
 	def addWidget(self,widget,*args,**kwargs):
 		self.layout.addWidget(widget,*args,**kwargs)
-
-def get_app():
-	app = QApplication(sys.argv)
-	file = QFile("theme.qss")
-	file.open(QFile.ReadOnly | QFile.Text)
-	stream = QTextStream(file)
-	app.setStyleSheet(stream.readAll())
-	return app
 
 class icon_input_line(QWidget):
 	def getText(self):
@@ -261,7 +280,7 @@ class RepoView(QWidget):
 		super().__init__(*args,**kwargs)
 		self.data = data
 
-		self.setWindowTitle(getWindowTitle(repo,self.data["repo"]["name"]))
+		self.setWindowTitle(getWindowTitle("Repo",self.data["repo"]["name"]))
 		self.show()
 		
 		main_vbox = QVBoxLayout()
@@ -300,8 +319,6 @@ class RepoView(QWidget):
 		self.tree.select_line(len(self.data["commits"])-1)
 
 class Login(QWidget):
-	submit = pyqtSignal(str,str) # username, password
-
 	def set_label(self,textt,error=False):
 		self.label.setText(textt)
 		self.label.setStyleSheet("color: %s"%"#FFB900" if error else "white")
@@ -335,25 +352,59 @@ class Login(QWidget):
 		grid.addWidget(window,1,1)
 		self.setLayout(grid)
 
-
 	def keyPressEvent(self, event):
 		if self.password.line.hasFocus() or self.button.hasFocus() or self.username.line.hasFocus():
-			if event.key() == Qt.Key_Return:
+			if event.key() == Qt. Key_Return: 
 				self.on_press()
 
 	def on_press(self):
-		self.submit.emit(self.username.getText(),self.password.getText())
+		username,password = self.username.getText(), self.password.getText()
+		if username == "" or password =="":
+			self.set_label("Username and password cannot be empty!",True)
+		else:
+			main.client.set_auth((username,password))
+			self.set_label("Logging you in")
+			main.update_ui()
+			r = main.client.get("profile")
+			if r.status_code==200:
+				main.set_ui(Profile(r.json()))
+			else:
+				self.set_label("Username or Password incorrect!",True)
 
 class Profile(QWidget):
+	def repo_selected(self):
+		repo = self.repos.selectedIndexes()[0]
+		id = self.branches[repo.data()]
+		r = main.client.get(["repos",id])
+		
+		if r.status_code == 200:
+			self.repo = r.json()
+			self.branches_list.clear()
+			for branch in r.json()["branches"]:
+				self.branches_list.addItem("%s - %s"%(branch["name"],branch["owner"]))
+
+
+	def on_press(self):
+		if self.repo:
+			main.set_ui(RepoView(self.repo))
+
 	def __init__(self,data,*args,**kwargs):
 		super().__init__(*args,**kwargs)
 		self.data = data
+		self.repo = None
 		self.setWindowTitle(getWindowTitle("Profile",self.data["user"]["name"]))
 		self.show()
+
+
+		self.branches ={}
+		for repo in self.data["repos"]:
+			self.branches[repo["name"]] = repo["id"]
 
 		info = BoxLayout("h")
 
 		self.repos = QListWidget()
+		self.repos.setSelectionMode(QAbstractItemView.SingleSelection)
+		self.repos.itemSelectionChanged.connect(self.repo_selected)
 		for repo in self.data["repos"]:
 			self.repos.addItem(repo["name"])
 		
@@ -361,9 +412,16 @@ class Profile(QWidget):
 		repo_view.addWidget(Header("Repos"))
 		repo_view.addWidget(self.repos)
 
+		open_button = QPushButton("Open Repo")
+		repo_view.addWidget(open_button)
+		open_button.clicked.connect(self.on_press)
+
+
+		self.branches_list = QListWidget()
+		self.branches_list.setSelectionMode(QAbstractItemView.NoSelection)
 		branch_view = BoxLayout("v")
 		branch_view.addWidget(Header("Branches"))
-		branch_view.addWidget(QListWidget())
+		branch_view.addWidget(self.branches_list)
 
 		info.addWidget(repo_view)
 		info.addWidget(branch_view)
@@ -372,3 +430,7 @@ class Profile(QWidget):
 		self.setLayout(layout)
 		layout.addWidget(Header("%s's Profile"%self.data["user"]["name"]))
 		layout.addWidget(info)
+
+
+main = Main()
+main.set_ui(Login())
