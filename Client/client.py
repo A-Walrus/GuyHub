@@ -18,7 +18,7 @@ class Client():
 	def __init__(self):
 		self.app = get_app()
 		self.ui = Login()
-		self.ui.submit.connect(self.submit)
+		self.ui.submit.connect(self.login_submit)
 		sys.exit(self.app.exec_())
 
 	def get_session(self,auth):
@@ -27,7 +27,7 @@ class Client():
 		s.auth = (auth[0],auth[1])
 		self.session = s
 
-	def submit(self,username,password):
+	def login_submit(self,username,password):
 		if username == "" or password =="":
 			self.ui.set_label("Username and password cannot be empty!",True)
 		else:
@@ -35,15 +35,20 @@ class Client():
 			r = self.session.get(self.get_url("profile"))
 			if r.status_code==200:
 				self.ui.set_label("Success")
-				print(r.json())
 				self.ui.close()
 				self.ui = Profile(r.json())
+				self.ui.selected.connect(self.get_repo)
 				# r = self.session.get(self.get_url("repos/1"))
 				# self.ui.close()
 				# self.ui = RepoView(r.json())
 			else:
 				self.ui.set_label("Username or Password incorrect!",True)
 
+	def get_repo(self,id):
+		print("gett",id)
+		r = self.session.get(self.get_url("repos/%d"%id))
+		print(r.json())
 
 if __name__ == '__main__':
-    client = Client()
+	client = Client()
+

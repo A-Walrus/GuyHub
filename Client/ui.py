@@ -345,15 +345,27 @@ class Login(QWidget):
 		self.submit.emit(self.username.getText(),self.password.getText())
 
 class Profile(QWidget):
+	selected = pyqtSignal(int)
+
+	def repo_selected(self):
+		repo = self.repos.selectedIndexes()[0]
+		self.selected.emit(self.branches[repo.data()])
+
+
 	def __init__(self,data,*args,**kwargs):
 		super().__init__(*args,**kwargs)
 		self.data = data
+		self.branches ={}
+		for repo in self.data["repos"]:
+			self.branches[repo["name"]] = repo["id"]
 		self.setWindowTitle(getWindowTitle("Profile",self.data["user"]["name"]))
 		self.show()
 
 		info = BoxLayout("h")
 
 		self.repos = QListWidget()
+		self.repos.setSelectionMode(QAbstractItemView.SingleSelection)
+		self.repos.itemSelectionChanged.connect(self.repo_selected)
 		for repo in self.data["repos"]:
 			self.repos.addItem(repo["name"])
 		
@@ -372,3 +384,5 @@ class Profile(QWidget):
 		self.setLayout(layout)
 		layout.addWidget(Header("%s's Profile"%self.data["user"]["name"]))
 		layout.addWidget(info)
+
+
