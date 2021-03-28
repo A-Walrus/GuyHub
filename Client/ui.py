@@ -290,7 +290,7 @@ class RepoView(QWidget):
 
 		self.tree = Tree(self.data["commits"])
 		self.tree.selected.connect(self.update_info)
-		hbox.addWidget(self.tree)
+
 
 		
 		info = BoxLayout("v")
@@ -308,10 +308,16 @@ class RepoView(QWidget):
 		info.addWidget(self.user)
 		info.addWidget(self.message)
 
-		hbox.addWidget(info)
 
+		splitter = QSplitter(Qt.Horizontal)
 
-		main_vbox.addWidget(Header(self.data["repo"]["name"]))
+		splitter.addWidget(self.tree)
+		splitter.addWidget(info)
+		hbox.addWidget(splitter)
+
+		header = Header(self.data["repo"]["name"])
+		header.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed))
+		main_vbox.addWidget(header)
 		main_vbox.addWidget(hbox)
 
 		self.setLayout(main_vbox)
