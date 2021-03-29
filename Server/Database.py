@@ -7,6 +7,11 @@ class Db():
 		self.path = path
 		self.connect = lite.connect(self.path,check_same_thread=False)
 
+	def user_has_access(self,user_name,repo_id):
+		res = self.fetch('''	SELECT * FROM Repos Join Connections ON Repos.Id = Connections.Repo 
+						Join Users On Connections.User = Users.Id 
+						WHERE Users.Name = "%s" AND Repos.Id = %s'''%(user_name,repo_id))
+		return len(res)!=0
 
 	def get_user(self,user_name):
 		user_id  = self.fetch('''	SELECT Users.id FROM Users WHERE Users.Name = "%s"'''%user_name)[0][0]
@@ -30,12 +35,12 @@ class Db():
 		return cursor.fetchall()
 
 	def get_commits(self,condition):
-		commits = self.fetch('''	SELECT Commits.id, Commits.Name, Commits.Message, Commits.Parent, Branches.Name, Branches.id, Users.Name, Repos.Name, Commits.MergedFrom
+		commits = self.fetch('''	SELECT Commits.id, Commits.Name, Commits.Message, Commits.Parent, Branches.Name, Branches.id, Users.Name, Repos.Id, Commits.MergedFrom
 							From Commits JOIN Branches ON Branches.id = Commits.Branch 
 							JOIN Users ON Users.id = Commits.User 
 							JOIN Repos ON Repos.id = Branches.Repo 
 							WHERE %s'''% condition)
-		return [{"id":commit[0],"name":commit[1],"message":commit[2],"parent":commit[3],"branch":{"name":commit[4],"id":commit[5]},"user":commit[6],"repo":commit[7],"mergedFrom":commit[8]} for commit in commits]
+		return [{"id":commit[0],"name":commit[1],"message":commit[2],"parent":commit[3],"branch":{"name":commit[4],"id":commit[5]},"user":commit[6],"repo":self.get_repo(commit[7]),"mergedFrom":commit[8]} for commit in commits]
 
 	def validate(self, user, password):
 		stored = self.fetch('''	SELECT Users.Name,Users.Password

@@ -1,17 +1,21 @@
-from PyQt5.QtWidgets import *
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
 import sys
 import json
 import requests
 import ssl
 from urllib3.exceptions import InsecureRequestWarning
+import os
+import shutil
+import base64
 
 requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning) # supress ssl certificate warning, because I trust my own server
 
 class Client():
 
 	def get_url(self,path):
+		if isinstance(path, str):
+			path = path
+		else:
+			path = "/".join([str(item) for item in path])
 		return "https://%s:%s/%s"%('localhost',5000,path)
 
 	def __init__(self):
@@ -29,11 +33,16 @@ class Client():
 		self.session = s
 
 	def get(self,path):
-		if isinstance(path, str):
-			url = self.get_url(path)
-		else:
-			url = self.get_url("/".join([str(item) for item in path]))
-		return self.session.get(url)
+		return self.session.get(self.get_url(path))
+
+	def post_file(self,path,file_path):
+		return self.session.post(self.get_url(path),files = {'file': open(file_path, 'rb')})
+
+def gen_commit(path):
+	pass
+
+
 
 if __name__ == '__main__':
-    client = Client()
+	pass
+

@@ -388,6 +388,8 @@ class Profile(QWidget):
 			self.branches_list.clear()
 			for branch in r.json()["branches"]:
 				self.branches_list.addItem("%s - %s"%(branch["name"],branch["owner"]))
+		else:
+			print(r)
 
 
 	def on_press(self):
@@ -436,7 +438,6 @@ class Profile(QWidget):
 		self.setLayout(layout)
 		layout.addWidget(Header("%s's Profile"%self.data["user"]["name"]))
 		layout.addWidget(info)
-
 
 main = Main()
 main.set_ui(Login())
