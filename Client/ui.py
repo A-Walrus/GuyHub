@@ -3,8 +3,11 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 import sys
 
+
 import qtawesome as qta
 from client import *
+
+SIZE = 24
 
 class Main():
 	def __init__(self):
@@ -30,9 +33,6 @@ def get_app():
 	stream = QTextStream(file)
 	app.setStyleSheet(stream.readAll())
 	return app
-
-SIZE = 24
-
 
 def getWindowTitle(page,item):
 	return "%s - %s"%(page,item)
@@ -111,6 +111,11 @@ class Cell(QWidget):
 
 class CommitLine(QWidget):
 	clicked = pyqtSignal(int)
+
+	def pull(self):
+		main.client.pull_commit(self.data["id"])
+
+
 	def __init__(self,cells,data,index,*args,**kwargs):
 		super().__init__(*args,**kwargs)
 		self.cells = cells
@@ -128,12 +133,20 @@ class CommitLine(QWidget):
 		self.label.setFixedWidth(150)
 		hbox.addWidget(self.spacer)
 		hbox.addWidget(self.label)
+
 		for i,cell_data in enumerate(cells):
 			if len(list(filter(lambda x: x!=[],cells[i:])))!=0:
 				hbox.addWidget(Cell(cell_data))
+
+		self.button = QPushButton("Pull")
+		self.button.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
+		self.button.clicked.connect(self.pull)
 		hbox.addWidget(QWidget())
+		hbox.addWidget(self.button)
+		self.button.setStyleSheet("background-color: #505F69")
 		self.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed))
 		self.setFixedHeight(SIZE)
+
 
 	def mousePressEvent(self,event):
 		self.clicked.emit(self.index)
@@ -155,7 +168,7 @@ class Tree(QScrollArea):
 			if j!=i:
 				line.unselect()
 			else:
-				line.setStyleSheet("background-color: #333344;")
+				line.setStyleSheet("background-color: #333344")
 				self.ensureWidgetVisible(line)
 		self.selected.emit(self.commits[i],self.branch_colors[self.commits[i]["branch"]["id"]])
 
