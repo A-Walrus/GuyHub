@@ -2,6 +2,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 import sys
+
 import qtawesome as qta
 from client import *
 
@@ -74,7 +75,7 @@ class Cell(QWidget):
 		self.infos = infos
 		self.setFixedSize(SIZE,SIZE)
 
-	def drawBase(self,event):
+	def drawBase(self,event): # draw the base class
 		super().paintEvent(event)
 		opt = QStyleOption()
 		opt.initFrom(self)
@@ -82,32 +83,31 @@ class Cell(QWidget):
 		s = self.style()
 		s.drawPrimitive(QStyle.PE_Widget, opt, p, self) 
 
-	def paintEvent(self, event):
-		self.drawBase(event)
-
-		qp = QPainter()
-		qp.begin(self)
-		qp.setRenderHint(QPainter.Antialiasing)
+	def paintEvent(self, event): # called when Qt wants to paint this widget
+		self.drawBase(event) 
+		qp = QPainter() # create a qpainter
+		qp.begin(self) # start painting on self
+		qp.setRenderHint(QPainter.Antialiasing) # turn on anti aliasing 
 		for info in self.infos[::-1]:
-			qp.setPen(QPen(QColor(info["color"]),2))
+			qp.setPen(QPen(QColor(info["color"]),2)) # set pen to color and width
 			for direction in set(info["dirs"]):
 				pattern = [1,2,1,-2]
-				qp.drawLine(SIZE/2,SIZE/2,(SIZE/2)*pattern[direction],(SIZE/2)*pattern[(direction-1)%4])
+				qp.drawLine(SIZE/2,SIZE/2,(SIZE/2)*pattern[direction],(SIZE/2)*pattern[(direction-1)%4]) # draw a line between x1,y1, x2,y2
 			if "symbol" in info:
 				qp.setBrush(QColor(info["color"]))
 				if info["symbol"]=="dot":
-					qp.drawEllipse(QPointF(SIZE/2,SIZE/2),3,3)
+					qp.drawEllipse(QPointF(SIZE/2,SIZE/2),3,3) # draw a circle at a point
 				if info["symbol"]=="merge":
 					offset = 6
 					qp.drawPolygon(	QPointF(SIZE/2-offset,SIZE/2),
 									QPointF(SIZE/2,SIZE/2+offset),
 									QPointF(SIZE/2+offset,SIZE/2),
-									QPointF(SIZE/2,SIZE/2-offset))
+									QPointF(SIZE/2,SIZE/2-offset)) # draw a rotated square
 			if "corner" in info:
 				pattern = [-0.5,-0.5,0.5,0.5]
 				corner = info["corner"]
-				qp.drawArc(SIZE*pattern[corner],SIZE*(pattern[(corner+1)%4]),SIZE,SIZE,90*16*corner,90*16*(corner+5))
-		qp.end()
+				qp.drawArc(SIZE*pattern[corner],SIZE*(pattern[(corner+1)%4]),SIZE,SIZE,90*16*corner,90*16*(corner+5)) # draw a rounded corner
+		qp.end() # end the painter
 
 class CommitLine(QWidget):
 	clicked = pyqtSignal(int)
