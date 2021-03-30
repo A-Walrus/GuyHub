@@ -34,8 +34,8 @@ def get_app():
 	app.setStyleSheet(stream.readAll())
 	return app
 
-def getWindowTitle(page,item):
-	return "%s - %s"%(page,item)
+def getWindowTitle(items):
+	return " - ".join(items)
 
 class BoxLayout(QWidget):
 	def __init__(self,direction,*args,**kwargs):
@@ -113,7 +113,7 @@ class CommitLine(QWidget):
 	clicked = pyqtSignal(int)
 
 	def pull(self):
-		main.client.pull_commit(self.data["id"])
+		main.client.pull_commit(self.data["id"],self.data["repo"]["id"])
 
 
 	def __init__(self,cells,data,index,*args,**kwargs):
@@ -293,7 +293,7 @@ class RepoView(QWidget):
 		super().__init__(*args,**kwargs)
 		self.data = data
 
-		self.setWindowTitle(getWindowTitle("Repo",self.data["repo"]["name"]))
+		self.setWindowTitle(getWindowTitle(["Repo",self.data["repo"]["name"],main.client.get_repo_path(self.data["repo"]["id"])]))
 		self.show()
 		
 		main_vbox = QVBoxLayout()
@@ -413,7 +413,7 @@ class Profile(QWidget):
 		super().__init__(*args,**kwargs)
 		self.data = data
 		self.repo = None
-		self.setWindowTitle(getWindowTitle("Profile",self.data["user"]["name"]))
+		self.setWindowTitle(getWindowTitle(["Profile",self.data["user"]["name"]]))
 		self.show()
 
 

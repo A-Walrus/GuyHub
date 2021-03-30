@@ -1,16 +1,17 @@
-import sys
-import json
-import requests
-import ssl
+import sys, json, requests, ssl
 from urllib3.exceptions import InsecureRequestWarning
 import os
-import shutil
-import base64
 from zipfile import ZipFile
 
 requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning) # supress ssl certificate warning, because I trust my own server
 
+locations = "repo_locations.json"
+
 class Client():
+
+	def get_repo_path(self,id):
+		return self.locations[str(id)]
+
 	def get_url(self,path):
 		if isinstance(path, str):
 			path = path
@@ -21,6 +22,8 @@ class Client():
 	def __init__(self):
 		self.auth  = ("User","Pass")
 		self.get_session()
+		with open(locations) as file:
+			self.locations = json.load(file)
 
 	def set_auth(self,auth):
 		self.session.auth = auth
@@ -34,12 +37,12 @@ class Client():
 	def get(self,path):
 		return self.session.get(self.get_url(path))
 
-	def pull_commit(self,commit_id):
-		FILE = "pull.zip"
+	def pull_commit(self,commit_id,repo_id):
+		FILE = "pulls/%s.zip"%repo_id
 		r = self.get(["commits",commit_id])
 		open(FILE,'wb').write(r.content)
 		with ZipFile(FILE, 'r') as zipObj:
-			zipObj.extractall('working')
+			zipObj.extractall(self.get_repo_path(repo_id))
 
 def gen_commit(path):
 	pass
