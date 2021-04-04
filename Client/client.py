@@ -44,9 +44,6 @@ class Client():
 		with ZipFile(FILE, 'r') as zipObj:
 			zipObj.extractall(self.get_repo_path(repo_id))
 
-def gen_commit(path):
-	pass
-
 
 
 if __name__ == '__main__':

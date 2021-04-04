@@ -112,10 +112,6 @@ class Cell(QWidget):
 class CommitLine(QWidget):
 	clicked = pyqtSignal(int)
 
-	def pull(self):
-		main.client.pull_commit(self.data["id"],self.data["repo"]["id"])
-
-
 	def __init__(self,cells,data,index,*args,**kwargs):
 		super().__init__(*args,**kwargs)
 		self.cells = cells
@@ -138,12 +134,7 @@ class CommitLine(QWidget):
 			if len(list(filter(lambda x: x!=[],cells[i:])))!=0:
 				hbox.addWidget(Cell(cell_data))
 
-		self.button = QPushButton("Pull")
-		self.button.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
-		self.button.clicked.connect(self.pull)
 		hbox.addWidget(QWidget())
-		hbox.addWidget(self.button)
-		self.button.setStyleSheet("background-color: #505F69")
 		self.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed))
 		self.setFixedHeight(SIZE)
 
@@ -246,7 +237,6 @@ class Tree(QScrollArea):
 		if commit:
 			self.commit_positions[commit["id"]] = (x,y)
 
-
 	def is_branch_dead(self,branch,commits):
 		return len(list(filter(lambda x: x["branch"]["id"]==branch or x["mergedFrom"]==branch,commits))) == 0
 
@@ -282,20 +272,23 @@ class Tree(QScrollArea):
 
 class RepoView(QWidget):
 	def update_info(self,info,color):
+		print(info)
+		self.selected = info
 		self.message.setText(info["message"])
 		self.user.setText(info["user"])
 		self.branch.setText(info["branch"]["name"])
 		self.branch.setStyleSheet("color: %s"%color)
 		self.name.setText(info["name"])
 
+	def Fetch(self):
+		main.client.pull_commit(self.selected["id"],self.selected["repo"]["id"])
 
 	def __init__(self,data,*args,**kwargs):
 		super().__init__(*args,**kwargs)
 		self.data = data
 
 		self.setWindowTitle(getWindowTitle(["Repo",self.data["repo"]["name"],main.client.get_repo_path(self.data["repo"]["id"])]))
-		self.show()
-		
+
 		main_vbox = QVBoxLayout()
 
 		hbox = BoxLayout("h")
@@ -329,12 +322,37 @@ class RepoView(QWidget):
 		hbox.addWidget(splitter)
 
 		header = Header(self.data["repo"]["name"])
-		header.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed))
-		main_vbox.addWidget(header)
+		add_user = QPushButton("Add User")
+		add_user.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
+		set_path = QPushButton("Set Repo Path")
+		set_path.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
+
+
+		top =BoxLayout("h")
+		top.addWidget(header)
+		top.addWidget(add_user)
+		top.addWidget(set_path)
+		top.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed))
+
+		main_vbox.addWidget(top)
 		main_vbox.addWidget(hbox)
+		
+		fetch = QPushButton("Fetch")
+		fetch.clicked.connect(self.Fetch)
+
+		commit = QPushButton("Commit")
+
+
+		bottom = BoxLayout("h")
+		bottom.addWidget(fetch)
+		bottom.addWidget(commit)
+		bottom.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
+
+		main_vbox.addWidget(bottom)
 
 		self.setLayout(main_vbox)
 
+		self.show()
 		self.tree.select_line(len(self.data["commits"])-1)
 
 class Login(QWidget):
