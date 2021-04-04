@@ -9,6 +9,9 @@ from client import *
 
 SIZE = 24
 
+
+
+
 class Main():
 	def __init__(self):
 		self.app = get_app()
@@ -68,6 +71,12 @@ class icon_input_line(QWidget):
 class Header(QLabel):
 	def __init__(self,*args,**kwargs):
 		super().__init__(*args,**kwargs)
+
+
+class Window(QWidget):
+	def __init__(self,*args,**kwargs):
+		super().__init__(*args,**kwargs)
+
 
 class Cell(QWidget):
 	def __init__(self,infos,*args,**kwargs):
@@ -270,7 +279,7 @@ class Tree(QScrollArea):
 		self.setWidget(self.vbox)
 		self.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding))
 
-class RepoView(QWidget):
+class RepoView(Window):
 	def update_info(self,info,color):
 		print(info)
 		self.selected = info
@@ -355,7 +364,7 @@ class RepoView(QWidget):
 		self.show()
 		self.tree.select_line(len(self.data["commits"])-1)
 
-class Login(QWidget):
+class Login(Window):
 	def set_label(self,textt,error=False):
 		self.label.setText(textt)
 		self.label.setStyleSheet("color: %s"%"#FFB900" if error else "white")
@@ -408,7 +417,7 @@ class Login(QWidget):
 			else:
 				self.set_label("Username or Password incorrect!",True)
 
-class Profile(QWidget):
+class Profile(Window):
 	def repo_selected(self):
 		repo = self.repos.selectedIndexes()[0]
 		id = self.branches[repo.data()]
