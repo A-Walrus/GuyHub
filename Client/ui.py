@@ -14,14 +14,18 @@ class Main():
 		self.app = get_app()
 		self.ui = None
 		self.client = Client()
+		self.ui_history=[]
 
 	def set_ui(self,ui):
 		if self.ui:
+			self.ui_history.append(self.ui)
 			self.ui.close()
 			self.ui = ui
 		else:
 			self.ui = ui
 			sys.exit(self.app.exec_())
+		self.ui.show()
+
 
 	def update_ui(self):
 		QCoreApplication.processEvents()
@@ -72,6 +76,22 @@ class Header(QLabel):
 class Window(QWidget):
 	def __init__(self,*args,**kwargs):
 		super().__init__(*args,**kwargs)
+		vbox = QVBoxLayout()
+		button = QPushButton(qta.icon('mdi.keyboard-backspace',color='white'),"Back")
+		button.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
+		button.clicked.connect(self.back)
+		self.w= QWidget()
+		vbox.addWidget(self.w)
+		vbox.addWidget(button)
+		self.setLayout(vbox)
+
+	def back(self):
+		if len(main.ui_history)>0:
+			ui = main.ui_history.pop()
+			main.set_ui(ui)
+			main.ui_history.pop() # pop self
+
+
 
 class Cell(QWidget):
 	def __init__(self,infos,*args,**kwargs):
@@ -294,13 +314,13 @@ class RepoView(Window):
 		main.client.set_location(self.data["repo"]["id"],file)
 		self.setWindowTitle(getWindowTitle(["Repo",self.data["repo"]["name"],main.client.get_repo_path(self.data["repo"]["id"])]))
 
+	def commit(self):
+		print(self.selected)
 
 	def __init__(self,data,*args,**kwargs):
 		super().__init__(*args,**kwargs)
 		self.data = data
-
 		path = main.client.get_repo_path(self.data["repo"]["id"])
-
 		if path:
 			self.setWindowTitle(getWindowTitle(["Repo",self.data["repo"]["name"],path]))
 		else:
@@ -313,8 +333,6 @@ class RepoView(Window):
 
 		self.tree = Tree(self.data["commits"])
 		self.tree.selected.connect(self.update_info)
-
-
 		
 		info = BoxLayout("v")
 		info.layout.setContentsMargins(0,0,0,0)
@@ -359,7 +377,7 @@ class RepoView(Window):
 		fetch.clicked.connect(self.Fetch)
 
 		commit = QPushButton("Commit")
-
+		commit.clicked.connect(self.commit)
 
 		bottom = BoxLayout("h")
 		bottom.addWidget(fetch)
@@ -368,12 +386,12 @@ class RepoView(Window):
 
 		main_vbox.addWidget(bottom)
 
-		self.setLayout(main_vbox)
+		self.w.setLayout(main_vbox)
 
 		self.show()
 		self.tree.select_line(len(self.data["commits"])-1)
 
-class Login(Window):
+class Login(QWidget):
 	def set_label(self,textt,error=False):
 		self.label.setText(textt)
 		self.label.setStyleSheet("color: %s"%"#FFB900" if error else "white")
@@ -450,7 +468,8 @@ class Profile(Window):
 		self.data = data
 		self.repo = None
 		self.setWindowTitle(getWindowTitle(["Profile",self.data["user"]["name"]]))
-		self.show()
+
+
 
 
 		self.repo_n_id ={}
@@ -484,11 +503,13 @@ class Profile(Window):
 		info.addWidget(user_view)
 
 		layout = QVBoxLayout()
-		self.setLayout(layout)
+		self.w.setLayout(layout)
 		layout.addWidget(Header("%s's Profile"%self.data["user"]["name"]))
 		layout.addWidget(info)
 
-class AddUser(Window):
+		self.show()
+
+class AddUser(QWidget):
 
 	def pressed(self):
 		main.client.get(["add_user",self.data["repo"]["id"],self.users_dict[self.combo.currentText()]])
