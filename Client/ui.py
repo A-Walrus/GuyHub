@@ -303,8 +303,8 @@ class RepoView(Window):
 		self.branch.setStyleSheet("color: %s"%color)
 		self.name.setText(info["name"])
 
-	def Fetch(self):
-		main.client.pull_commit(self.selected["id"],self.selected["repo"]["id"])
+	def fetch(self):
+		main.client.pull_commit(self.selected["id"],self.selected["repo"]["id"],True)
 
 	def add_user(self):
 		self.add_user = AddUser(self.data)
@@ -316,6 +316,9 @@ class RepoView(Window):
 
 	def commit(self):
 		print(self.selected)
+
+	def download(self):
+		main.client.pull_commit(self.selected["id"],self.selected["repo"]["id"],False)
 
 	def __init__(self,data,*args,**kwargs):
 		super().__init__(*args,**kwargs)
@@ -374,14 +377,18 @@ class RepoView(Window):
 		main_vbox.addWidget(hbox)
 		
 		fetch = QPushButton("Fetch")
-		fetch.clicked.connect(self.Fetch)
+		fetch.clicked.connect(self.fetch)
 
 		commit = QPushButton("Commit")
 		commit.clicked.connect(self.commit)
 
+		download = QPushButton("Download")
+		download.clicked.connect(self.download)
+
 		bottom = BoxLayout("h")
 		bottom.addWidget(fetch)
 		bottom.addWidget(commit)
+		bottom.addWidget(download)
 		bottom.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
 
 		main_vbox.addWidget(bottom)

@@ -2,10 +2,17 @@ import sys, json, requests, ssl
 from urllib3.exceptions import InsecureRequestWarning
 import os
 from zipfile import ZipFile
+from pathlib import Path
+from winreg import *
 
 requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning) # supress ssl certificate warning, because I trust my own server
 
 locations = "repo_locations.json"
+
+def get_downloads_folder():
+	with OpenKey(HKEY_CURRENT_USER, r'SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders') as key:
+		return QueryValueEx(key, '{374DE290-123F-4565-9164-39C4925E467B}')[0]
+
 
 class Client():
 
@@ -41,12 +48,13 @@ class Client():
 	def get(self,path):
 		return self.session.get(self.get_url(path))
 
-	def pull_commit(self,commit_id,repo_id):
+	def pull_commit(self,commit_id,repo_id,to_working):
 		FILE = "pulls/%s.zip"%repo_id
 		r = self.get(["commits",commit_id])
 		open(FILE,'wb').write(r.content)
 		with ZipFile(FILE, 'r') as zipObj:
-			zipObj.extractall(self.get_repo_path(repo_id))
+			path = self.get_repo_path(repo_id) if to_working else "%s/commit"%get_downloads_folder()
+			zipObj.extractall(path)
 
 	def set_location(self,repo_id,path):
 		self.locations[str(repo_id)]=path
