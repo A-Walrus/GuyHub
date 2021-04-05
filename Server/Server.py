@@ -34,9 +34,21 @@ def profile():
 @auth.login_required
 def repo(repo_id):
 	if user_access_to_repo(auth.current_user(),repo_id):
-		return {"commits":db.get_commits("Repos.ID = %s"%repo_id),"repo":db.get_repo(repo_id),"branches":db.get_repo_branches(repo_id)}
-	else:
-		abort(401)
+		return {"commits":db.get_commits("Repos.ID = %s"%repo_id),"repo":db.get_repo(repo_id),"branches":db.get_repo_branches(repo_id),"users":db.get_repo_users(repo_id)}
+
+@app.route("/add_user/<int:repo_id>/<int:user_id>")
+@auth.login_required
+def add_user(repo_id,user_id):
+	if user_access_to_repo(auth.current_user(),repo_id):
+		db.add_user_to_repo(user_id,repo_id)
+		return {}
+
+
+@app.route("/users")
+@auth.login_required
+def get_users():
+	return {"users":db.get_all_users()}
+
 
 
 @app.route("/commits/<int:commit_id>", methods = ["POST","GET"])

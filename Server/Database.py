@@ -64,13 +64,13 @@ class Db():
 		return [{"name": repo[0],"id":repo[1]} for repo in repos]
 
 	def add_user_to_repo(self, user, repo):
-		self.execute('''	INSERT INTO Connections (Repo,User) VALUES("%s","%s")'''%(repo["id"],user["id"]))
+		self.execute('''	INSERT INTO Connections (Repo,User) VALUES("%s","%s")'''%(repo,user))
 
 	def add_repo(self, owner, repo_name):
 		self.execute('''	INSERT INTO Repos (Name) VALUES("%s")'''%(repo_name))
 		repo = self.fetch('''	SELECT Repos.id, Repos.Name From Repos ORDER BY ID DESC''')[0]
 		repo = {"id": repo[0],"name":repo[1]}
-		self.add_user_to_repo(owner,repo)
+		self.add_user_to_repo(owner["id"],repo["id"])
 		branch = self.add_branch("Main",-1,owner,repo)
 		self.add_commit("Init","Initial Commit",branch,-1,owner)
 		return repo
@@ -83,6 +83,15 @@ class Db():
 	def get_repo_branches(self,repo_id):
 		branches =  self.fetch('''	SELECT Branches.Name, Users.Name From Branches JOIN Users ON Branches.Owner = Users.ID WHERE Branches.Repo = %s'''%repo_id)
 		return [{"name":branch[0], "owner":branch[1]} for branch in branches]
+
+	def get_all_users(self):
+		users =  self.fetch('''	SELECT Users.Name, Users.ID From Users''')
+		return [{"name":user[0], "id":user[1]} for user in users]
+
+	def get_repo_users(self,repo_id):
+		users =  self.fetch('''	SELECT Users.Name, Users.ID From Users JOIN Connections ON Users.Id = Connections.User WHERE Connections.repo = %s'''%repo_id)
+		return [{"name":user[0], "id":user[1]} for user in users]
+
 
 	def add_commit(self, commit_name, commit_message, branch,parent,user):
 		self.execute('''	INSERT INTO Commits (Name,Branch,Parent,User,Message) 

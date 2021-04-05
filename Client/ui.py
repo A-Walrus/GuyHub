@@ -9,9 +9,6 @@ from client import *
 
 SIZE = 24
 
-
-
-
 class Main():
 	def __init__(self):
 		self.app = get_app()
@@ -72,11 +69,9 @@ class Header(QLabel):
 	def __init__(self,*args,**kwargs):
 		super().__init__(*args,**kwargs)
 
-
 class Window(QWidget):
 	def __init__(self,*args,**kwargs):
 		super().__init__(*args,**kwargs)
-
 
 class Cell(QWidget):
 	def __init__(self,infos,*args,**kwargs):
@@ -281,7 +276,6 @@ class Tree(QScrollArea):
 
 class RepoView(Window):
 	def update_info(self,info,color):
-		print(info)
 		self.selected = info
 		self.message.setText(info["message"])
 		self.user.setText(info["user"])
@@ -291,6 +285,9 @@ class RepoView(Window):
 
 	def Fetch(self):
 		main.client.pull_commit(self.selected["id"],self.selected["repo"]["id"])
+
+	def add_user(self):
+		self.add_user = AddUser(self.data)
 
 	def __init__(self,data,*args,**kwargs):
 		super().__init__(*args,**kwargs)
@@ -333,6 +330,7 @@ class RepoView(Window):
 		header = Header(self.data["repo"]["name"])
 		add_user = QPushButton("Add User")
 		add_user.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
+		add_user.clicked.connect(self.add_user)
 		set_path = QPushButton("Set Repo Path")
 		set_path.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
 
@@ -387,8 +385,8 @@ class Login(Window):
 		self.password = icon_input_line("password",QLineEdit.EchoMode.Password,"fa5s.lock")
 		window.addWidget(self.password)
 
-		self.username.line.setText("Elon") # for testing
-		self.password.line.setText("$TSLA") # for testing
+		self.username.line.setText("Guy") # for testing
+		self.password.line.setText("pass_guy") # for testing
 
 		self.button = QPushButton("Login")
 		self.button.clicked.connect(self.on_press)
@@ -420,14 +418,14 @@ class Login(Window):
 class Profile(Window):
 	def repo_selected(self):
 		repo = self.repos.selectedIndexes()[0]
-		id = self.branches[repo.data()]
+		id = self.repo_n_id[repo.data()]
 		r = main.client.get(["repos",id])
 		
 		if r.status_code == 200:
 			self.repo = r.json()
-			self.branches_list.clear()
-			for branch in r.json()["branches"]:
-				self.branches_list.addItem("%s - %s"%(branch["name"],branch["owner"]))
+			self.users_list.clear()
+			for user in r.json()["users"]:
+				self.users_list.addItem(user["name"])
 		else:
 			print(r)
 
@@ -444,9 +442,9 @@ class Profile(Window):
 		self.show()
 
 
-		self.branches ={}
+		self.repo_n_id ={}
 		for repo in self.data["repos"]:
-			self.branches[repo["name"]] = repo["id"]
+			self.repo_n_id[repo["name"]] = repo["id"]
 
 		info = BoxLayout("h")
 
@@ -465,19 +463,52 @@ class Profile(Window):
 		open_button.clicked.connect(self.on_press)
 
 
-		self.branches_list = QListWidget()
-		self.branches_list.setSelectionMode(QAbstractItemView.NoSelection)
-		branch_view = BoxLayout("v")
-		branch_view.addWidget(Header("Branches"))
-		branch_view.addWidget(self.branches_list)
+		self.users_list = QListWidget()
+		self.users_list.setSelectionMode(QAbstractItemView.NoSelection)
+		user_view = BoxLayout("v")
+		user_view.addWidget(Header("Users"))
+		user_view.addWidget(self.users_list)
 
 		info.addWidget(repo_view)
-		info.addWidget(branch_view)
+		info.addWidget(user_view)
 
 		layout = QVBoxLayout()
 		self.setLayout(layout)
 		layout.addWidget(Header("%s's Profile"%self.data["user"]["name"]))
 		layout.addWidget(info)
+
+class AddUser(Window):
+
+	def pressed(self):
+		main.client.get(["add_user",self.data["repo"]["id"],self.users_dict[self.combo.currentText()]])
+		self.close()
+
+	def __init__(self,data,*args,**kwargs):
+		super().__init__(*args,**kwargs)
+		
+
+
+		self.data = data
+		vbox = QVBoxLayout()
+		self.setLayout(vbox)
+		vbox.addWidget(Header("Add User to %s"%self.data["repo"]["name"]))
+
+		self.combo = QComboBox()
+		users = [user["name"] for user in self.data["users"]]
+		r = main.client.get("users")
+		
+		
+		self.users_dict = {user["name"]:user["id"] for user in r.json()["users"]}
+		print(self.users_dict)
+
+		self.combo.addItems([user["name"] for user in r.json()["users"] if not user["name"] in users])
+		vbox.addWidget(self.combo)
+		button = QPushButton("Add User")
+		button.clicked.connect(self.pressed)
+		vbox.addWidget(button)
+		self.show()
+
+
 
 main = Main()
 main.set_ui(Login())
