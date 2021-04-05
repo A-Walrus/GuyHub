@@ -289,11 +289,22 @@ class RepoView(Window):
 	def add_user(self):
 		self.add_user = AddUser(self.data)
 
+	def set_path(self):
+		file = str(QFileDialog.getExistingDirectory(self, "Select Working Directory"))
+		main.client.set_location(self.data["repo"]["id"],file)
+		self.setWindowTitle(getWindowTitle(["Repo",self.data["repo"]["name"],main.client.get_repo_path(self.data["repo"]["id"])]))
+
+
 	def __init__(self,data,*args,**kwargs):
 		super().__init__(*args,**kwargs)
 		self.data = data
 
-		self.setWindowTitle(getWindowTitle(["Repo",self.data["repo"]["name"],main.client.get_repo_path(self.data["repo"]["id"])]))
+		path = main.client.get_repo_path(self.data["repo"]["id"])
+
+		if path:
+			self.setWindowTitle(getWindowTitle(["Repo",self.data["repo"]["name"],path]))
+		else:
+			self.set_path()
 
 		main_vbox = QVBoxLayout()
 
@@ -333,7 +344,7 @@ class RepoView(Window):
 		add_user.clicked.connect(self.add_user)
 		set_path = QPushButton("Set Repo Path")
 		set_path.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
-
+		set_path.clicked.connect(self.set_path)
 
 		top =BoxLayout("h")
 		top.addWidget(header)
@@ -496,18 +507,13 @@ class AddUser(Window):
 		self.combo = QComboBox()
 		users = [user["name"] for user in self.data["users"]]
 		r = main.client.get("users")
-		
-		
 		self.users_dict = {user["name"]:user["id"] for user in r.json()["users"]}
-		print(self.users_dict)
-
 		self.combo.addItems([user["name"] for user in r.json()["users"] if not user["name"] in users])
 		vbox.addWidget(self.combo)
 		button = QPushButton("Add User")
 		button.clicked.connect(self.pressed)
 		vbox.addWidget(button)
 		self.show()
-
 
 
 main = Main()

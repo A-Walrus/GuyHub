@@ -10,7 +10,11 @@ locations = "repo_locations.json"
 class Client():
 
 	def get_repo_path(self,id):
-		return self.locations[str(id)]
+		if str(id) in self.locations:
+			return self.locations[str(id)]
+		else:
+			return None
+
 
 	def get_url(self,path):
 		if isinstance(path, str):
@@ -43,6 +47,12 @@ class Client():
 		open(FILE,'wb').write(r.content)
 		with ZipFile(FILE, 'r') as zipObj:
 			zipObj.extractall(self.get_repo_path(repo_id))
+
+	def set_location(self,repo_id,path):
+		self.locations[str(repo_id)]=path
+		with open(locations, 'w') as outfile:
+			json.dump(self.locations, outfile)
+
 
 
 
