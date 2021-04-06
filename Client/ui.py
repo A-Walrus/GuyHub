@@ -57,7 +57,7 @@ class icon_input_line(QWidget):
 	def getText(self):
 		return self.line.text()
 
-	def __init__(self,text,mode,icon_name,*args,**kwargs):
+	def __init__(self,text,icon_name,mode=QLineEdit.EchoMode.Normal,*args,**kwargs):
 		super().__init__(*args,**kwargs)
 		layout = QHBoxLayout()
 		self.setLayout(layout)
@@ -90,8 +90,6 @@ class Window(QWidget):
 			ui = main.ui_history.pop()
 			main.set_ui(ui)
 			main.ui_history.pop() # pop self
-
-
 
 class Cell(QWidget):
 	def __init__(self,infos,*args,**kwargs):
@@ -315,7 +313,15 @@ class RepoView(Window):
 		self.setWindowTitle(getWindowTitle(["Repo",self.data["repo"]["name"],main.client.get_repo_path(self.data["repo"]["id"])]))
 
 	def commit(self):
-		print(self.selected)
+		self.commit_ui= Commit(self.selected)
+
+
+	def reload(self):
+		r = main.client.get(["repos",self.data["repo"]["id"]])
+		self.close()
+		self.__init__(r.json())
+
+
 
 	def download(self):
 		main.client.pull_commit(self.selected["id"],self.selected["repo"]["id"],False)
@@ -367,8 +373,14 @@ class RepoView(Window):
 		set_path.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
 		set_path.clicked.connect(self.set_path)
 
+		reload_button = QPushButton("Reload")
+		reload_button.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
+		reload_button.clicked.connect(self.reload)
+
+
 		top =BoxLayout("h")
 		top.addWidget(header)
+		top.addWidget(reload_button)
 		top.addWidget(add_user)
 		top.addWidget(set_path)
 		top.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed))
@@ -387,8 +399,8 @@ class RepoView(Window):
 
 		bottom = BoxLayout("h")
 		bottom.addWidget(fetch)
-		bottom.addWidget(commit)
 		bottom.addWidget(download)
+		bottom.addWidget(commit)
 		bottom.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
 
 		main_vbox.addWidget(bottom)
@@ -415,10 +427,10 @@ class Login(QWidget):
 		self.label.setAlignment(Qt.AlignCenter)
 		window.addWidget(self.label)
 		
-		self.username = icon_input_line("username",QLineEdit.EchoMode.Normal,"fa5s.user")
+		self.username = icon_input_line("username","fa5s.user")
 		window.addWidget(self.username)
 
-		self.password = icon_input_line("password",QLineEdit.EchoMode.Password,"fa5s.lock")
+		self.password = icon_input_line("password","fa5s.lock",QLineEdit.EchoMode.Password)
 		window.addWidget(self.password)
 
 		self.username.line.setText("Guy") # for testing
@@ -524,9 +536,6 @@ class AddUser(QWidget):
 
 	def __init__(self,data,*args,**kwargs):
 		super().__init__(*args,**kwargs)
-		
-
-
 		self.data = data
 		vbox = QVBoxLayout()
 		self.setLayout(vbox)
@@ -543,6 +552,29 @@ class AddUser(QWidget):
 		vbox.addWidget(button)
 		self.show()
 
+class Commit(QWidget):
+	def pressed(self):
+		print(self.data)
+		main.client.commit(self.data["id"],self.data["repo"]["id"],self.data["branch"]["id"],self.name.getText(),self.message.getText())
+		main.ui.reload()
+		self.close()
+
+	def __init__(self,data,*args,**kwargs):
+		super().__init__(*args,**kwargs)
+		self.data = data
+		vbox = QVBoxLayout()
+		self.setLayout(vbox)
+		vbox.addWidget(Header("Commit"))
+
+		self.name = icon_input_line("Name","fa5s.angle-right")
+		self.message = icon_input_line("message","fa5s.angle-double-right")
+		vbox.addWidget(self.name)
+		vbox.addWidget(self.message)
+
+		button = QPushButton("Commit")
+		button.clicked.connect(self.pressed)
+		vbox.addWidget(button)
+		self.show()
 
 main = Main()
 main.set_ui(Login())

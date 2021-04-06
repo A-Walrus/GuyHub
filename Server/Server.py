@@ -54,13 +54,15 @@ def get_users():
 @app.route("/commits/<int:commit_id>", methods = ["POST","GET"])
 @auth.login_required
 def commit(commit_id):
-	print("commit:",commit_id)
 	commit = db.get_commits("Commits.Id = %s"%commit_id)[0]
 	repo_id = commit["repo"]["id"]
-	print(repo_id)
 	if user_access_to_repo(auth.current_user(),repo_id):
 		if request.method == 'POST': # post
-			pass
+			args = request.args
+			id = db.add_commit(args.get("Name"),args.get("Message"),args.get("Branch"),commit_id,db.get_user(auth.current_user())["id"])
+			file = request.files["file"]
+			file.save(os.path.join(app.config["commits"],"%s.zip"%id))
+			return ""
 		else: # get
 			return send_from_directory(app.config["commits"], filename="%s.zip"%commit_id)
 	

@@ -72,7 +72,7 @@ class Db():
 		repo = {"id": repo[0],"name":repo[1]}
 		self.add_user_to_repo(owner["id"],repo["id"])
 		branch = self.add_branch("Main",-1,owner,repo)
-		self.add_commit("Init","Initial Commit",branch,-1,owner)
+		self.add_commit("Init","Initial Commit",branch["id"],-1,owner["id"])
 		return repo
 
 	def add_branch(self, branch_name,owner,repo):
@@ -92,7 +92,8 @@ class Db():
 		users =  self.fetch('''	SELECT Users.Name, Users.ID From Users JOIN Connections ON Users.Id = Connections.User WHERE Connections.repo = %s'''%repo_id)
 		return [{"name":user[0], "id":user[1]} for user in users]
 
-
 	def add_commit(self, commit_name, commit_message, branch,parent,user):
 		self.execute('''	INSERT INTO Commits (Name,Branch,Parent,User,Message) 
-							VALUES("%s","%s","%s","%s","%s")'''%(commit_name,branch["id"],parent,user["id"],commit_message))
+							VALUES("%s","%s","%s","%s","%s")'''%(commit_name,branch,parent,user,commit_message))
+		commit = self.fetch('''	SELECT Commits.Id From Commits ORDER BY ID DESC''')[0]
+		return commit[0]
