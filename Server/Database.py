@@ -77,8 +77,9 @@ class Db():
 
 	def add_branch(self, branch_name,owner,repo):
 		self.execute('''	INSERT INTO Branches (Name,Repo,Owner) 
-			VALUES("%s","%s","%s","%s")'''%(branch_name,repo["id"],owner["id"]))
+			VALUES("%s","%s","%s")'''%(branch_name,repo,owner))
 		branch = self.fetch('''	SELECT * From Branches ORDER BY ID DESC''')[0]
+		return branch[0]
 
 	def get_repo_branches(self,repo_id):
 		branches =  self.fetch('''	SELECT Branches.Name, Users.Name From Branches JOIN Users ON Branches.Owner = Users.ID WHERE Branches.Repo = %s'''%repo_id)

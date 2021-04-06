@@ -44,6 +44,19 @@ def add_user(repo_id,user_id):
 		return {}
 
 
+@app.route("/fork/<int:commit_id>/<branch_name>")
+@auth.login_required
+def fork(commit_id,branch_name):
+	commit = db.get_commits("Commits.Id = %s"%commit_id)[0]
+	repo_id = commit["repo"]["id"]
+	if user_access_to_repo(auth.current_user(),repo_id):
+		branch = db.add_branch(branch_name,db.get_user(auth.current_user())["id"],repo_id)
+		db.add_commit("Fork","",branch,commit_id,db.get_user(auth.current_user())["id"])
+		id = db.get_newest_commit_id()
+
+		return ""
+
+
 @app.route("/users")
 @auth.login_required
 def get_users():

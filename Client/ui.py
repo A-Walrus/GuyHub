@@ -305,7 +305,7 @@ class RepoView(Window):
 		main.client.pull_commit(self.selected["id"],self.selected["repo"]["id"],True)
 
 	def add_user(self):
-		self.add_user = AddUser(self.data)
+		self.ui = AddUser(self.data)
 
 	def set_path(self):
 		file = str(QFileDialog.getExistingDirectory(self, "Select Working Directory"))
@@ -313,7 +313,7 @@ class RepoView(Window):
 		self.setWindowTitle(getWindowTitle(["Repo",self.data["repo"]["name"],main.client.get_repo_path(self.data["repo"]["id"])]))
 
 	def commit(self):
-		self.commit_ui= Commit(self.selected)
+		self.ui= Commit(self.selected)
 
 
 	def reload(self):
@@ -321,7 +321,8 @@ class RepoView(Window):
 		self.close()
 		self.__init__(r.json())
 
-
+	def fork(self):
+		self.ui = Fork(self.selected)
 
 	def download(self):
 		main.client.pull_commit(self.selected["id"],self.selected["repo"]["id"],False)
@@ -397,10 +398,14 @@ class RepoView(Window):
 		download = QPushButton("Download")
 		download.clicked.connect(self.download)
 
+		fork = QPushButton("Fork")
+		fork.clicked.connect(self.fork)
+
 		bottom = BoxLayout("h")
 		bottom.addWidget(fetch)
 		bottom.addWidget(download)
 		bottom.addWidget(commit)
+		bottom.addWidget(fork)
 		bottom.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
 
 		main_vbox.addWidget(bottom)
@@ -477,7 +482,6 @@ class Profile(Window):
 		else:
 			print(r)
 
-
 	def on_press(self):
 		if self.repo:
 			main.set_ui(RepoView(self.repo))
@@ -487,10 +491,6 @@ class Profile(Window):
 		self.data = data
 		self.repo = None
 		self.setWindowTitle(getWindowTitle(["Profile",self.data["user"]["name"]]))
-
-
-
-
 		self.repo_n_id ={}
 		for repo in self.data["repos"]:
 			self.repo_n_id[repo["name"]] = repo["id"]
@@ -528,52 +528,78 @@ class Profile(Window):
 
 		self.show()
 
-class AddUser(QWidget):
+class PopUP(BoxLayout):
+	def __init__(self,header,*args,**kwargs):
+		super().__init__("v",*args,**kwargs)
+		self.addWidget(Header(header))
+		self.setWindowTitle(header)
+		self.initUI()
+		self.show()
+		self.setFixedSize(self.size())
 
+
+class AddUser(PopUP):
 	def pressed(self):
 		main.client.get(["add_user",self.data["repo"]["id"],self.users_dict[self.combo.currentText()]])
 		self.close()
 
 	def __init__(self,data,*args,**kwargs):
-		super().__init__(*args,**kwargs)
 		self.data = data
-		vbox = QVBoxLayout()
-		self.setLayout(vbox)
-		vbox.addWidget(Header("Add User to %s"%self.data["repo"]["name"]))
+		super().__init__("Add User to %s"%self.data["repo"]["name"],*args,**kwargs)
+		
+
+	def initUI(self):
 
 		self.combo = QComboBox()
 		users = [user["name"] for user in self.data["users"]]
 		r = main.client.get("users")
 		self.users_dict = {user["name"]:user["id"] for user in r.json()["users"]}
 		self.combo.addItems([user["name"] for user in r.json()["users"] if not user["name"] in users])
-		vbox.addWidget(self.combo)
+		self.addWidget(self.combo)
 		button = QPushButton("Add User")
 		button.clicked.connect(self.pressed)
-		vbox.addWidget(button)
-		self.show()
+		self.addWidget(button)
 
-class Commit(QWidget):
+class Commit(PopUP):
 	def pressed(self):
 		main.client.commit(self.data["id"],self.data["repo"]["id"],self.data["branch"]["id"],self.name.getText(),self.message.getText())
 		main.ui.reload()
 		self.close()
 
 	def __init__(self,data,*args,**kwargs):
-		super().__init__(*args,**kwargs)
 		self.data = data
-		vbox = QVBoxLayout()
-		self.setLayout(vbox)
-		vbox.addWidget(Header("Commit"))
+		super().__init__("Commit",*args,**kwargs)
+		
 
+	def initUI(self):
 		self.name = icon_input_line("Name","fa5s.angle-right")
 		self.message = icon_input_line("message","fa5s.angle-double-right")
-		vbox.addWidget(self.name)
-		vbox.addWidget(self.message)
+		self.addWidget(self.name)
+		self.addWidget(self.message)
 
 		button = QPushButton("Commit")
 		button.clicked.connect(self.pressed)
-		vbox.addWidget(button)
-		self.show()
+		self.addWidget(button)
+		
+class Fork(PopUP):
+	def pressed(self):
+		name = self.line.getText()
+		main.client.get(["fork",self.data["id"],name])
+		main.ui.reload()
+		self.close()
+
+	def __init__(self,data,*args,**kwargs):
+		self.data=data
+		super().__init__("Fork",*args,**kwargs)
+
+	def initUI(self):
+		self.line = icon_input_line("Branch Name","mdi.directions-fork")
+		self.button = QPushButton("Fork")
+		self.button.clicked.connect(self.pressed)
+
+		self.addWidget(self.line)
+		self.addWidget(self.button)
+
 
 main = Main()
 main.set_ui(Login())
