@@ -247,9 +247,9 @@ class Tree(QScrollArea):
 		self.add_cell_data(end[0],end[1],{"dirs":[1 if d_x<0 else 3],"color": color}) # end
 		self.add_cell_data(end[0],start[1],{"dirs":[],"corner":CORNERS[(dir_x,dir_y)],"color": color}) # corner
 
-		for y in range(start[0],end[0],dir_y): # vertical
+		for y in range(start[0]+dir_y,end[0],dir_y): # vertical
 			self.add_cell_data(y,start[1],{"dirs":[0,2],"color": color})
-		for x in range(start[1]+dir_x,end[1],dir_x): # vertical
+		for x in range(start[1]+dir_x,end[1],dir_x): # horizontal
 			self.add_cell_data(end[0],x,{"dirs":[1,3],"color": color})
 
 	def add_cell_data(self,x,y,info,commit=None):
