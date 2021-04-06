@@ -59,7 +59,8 @@ def commit(commit_id):
 	if user_access_to_repo(auth.current_user(),repo_id):
 		if request.method == 'POST': # post
 			args = request.args
-			id = db.add_commit(args.get("Name"),args.get("Message"),args.get("Branch"),commit_id,db.get_user(auth.current_user())["id"])
+			db.add_commit(args.get("Name"),args.get("Message"),args.get("Branch"),commit_id,db.get_user(auth.current_user())["id"])
+			id = db.get_newest_commit_id()
 			file = request.files["file"]
 			file.save(os.path.join(app.config["commits"],"%s.zip"%id))
 			return ""

@@ -554,7 +554,6 @@ class AddUser(QWidget):
 
 class Commit(QWidget):
 	def pressed(self):
-		print(self.data)
 		main.client.commit(self.data["id"],self.data["repo"]["id"],self.data["branch"]["id"],self.name.getText(),self.message.getText())
 		main.ui.reload()
 		self.close()

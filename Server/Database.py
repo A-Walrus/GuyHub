@@ -92,8 +92,11 @@ class Db():
 		users =  self.fetch('''	SELECT Users.Name, Users.ID From Users JOIN Connections ON Users.Id = Connections.User WHERE Connections.repo = %s'''%repo_id)
 		return [{"name":user[0], "id":user[1]} for user in users]
 
+	def get_newest_commit_id(self):
+		commit = self.fetch('''	SELECT Commits.Id From Commits ORDER BY ID DESC''')[0]
+		return commit[0]
+
 	def add_commit(self, commit_name, commit_message, branch,parent,user):
 		self.execute('''	INSERT INTO Commits (Name,Branch,Parent,User,Message) 
 							VALUES("%s","%s","%s","%s","%s")'''%(commit_name,branch,parent,user,commit_message))
-		commit = self.fetch('''	SELECT Commits.Id From Commits ORDER BY ID DESC''')[0]
-		return commit[0]
+		
