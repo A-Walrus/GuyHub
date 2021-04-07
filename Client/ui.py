@@ -308,7 +308,7 @@ class RepoView(Window):
 		self.ui = AddUser(self.data)
 
 	def set_path(self):
-		file = str(QFileDialog.getExistingDirectory(self, "Select Working Directory"))
+		file = str(QFileDialog.getExistingDirectory(self, "Select Working Directory For %s"%self.data["repo"]["name"]))
 		main.client.set_location(self.data["repo"]["id"],file)
 		self.setWindowTitle(getWindowTitle(["Repo",self.data["repo"]["name"],main.client.get_repo_path(self.data["repo"]["id"])]))
 
@@ -469,6 +469,14 @@ class Login(QWidget):
 				self.set_label("Username or Password incorrect!",True)
 
 class Profile(Window):
+	def new_repo(self):
+		self.ui = Repo()
+
+	def reload(self):
+		self.data = main.client.get(["profile"]).json()
+		self.close()
+		self.__init__(self.data)
+
 	def repo_selected(self):
 		repo = self.repos.selectedIndexes()[0]
 		id = self.repo_n_id[repo.data()]
@@ -508,8 +516,13 @@ class Profile(Window):
 		repo_view.addWidget(self.repos)
 
 		open_button = QPushButton("Open Repo")
-		repo_view.addWidget(open_button)
 		open_button.clicked.connect(self.on_press)
+		repo_view.addWidget(open_button)
+
+		new_repo = QPushButton("Create New Repo")
+		new_repo.clicked.connect(self.new_repo)
+		repo_view.addWidget(new_repo)
+
 
 
 		self.users_list = QListWidget()
@@ -537,11 +550,11 @@ class PopUP(BoxLayout):
 		self.show()
 		self.setFixedSize(self.size())
 
-
 class AddUser(PopUP):
 	def pressed(self):
 		main.client.get(["add_user",self.data["repo"]["id"],self.users_dict[self.combo.currentText()]])
 		self.close()
+		main.ui.reload()
 
 	def __init__(self,data,*args,**kwargs):
 		self.data = data
@@ -595,6 +608,25 @@ class Fork(PopUP):
 	def initUI(self):
 		self.line = icon_input_line("Branch Name","mdi.directions-fork")
 		self.button = QPushButton("Fork")
+		self.button.clicked.connect(self.pressed)
+
+		self.addWidget(self.line)
+		self.addWidget(self.button)
+
+class Repo(PopUP):
+	def pressed(self):
+		name = self.line.getText()
+		print(name)
+		main.client.get(['create_repo',name])
+		self.close()
+		main.ui.reload()
+
+	def __init__(self,*args,**kwargs):
+		super().__init__("Create Repo",*args,**kwargs)
+
+	def initUI(self):
+		self.line = icon_input_line("Repo Name","mdi.source-repository")
+		self.button = QPushButton("Create")
 		self.button.clicked.connect(self.pressed)
 
 		self.addWidget(self.line)

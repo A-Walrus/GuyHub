@@ -16,7 +16,6 @@ def get_downloads_folder():
 	with OpenKey(HKEY_CURRENT_USER, r'SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders') as key:
 		return QueryValueEx(key, '{374DE290-123F-4565-9164-39C4925E467B}')[0]
 
-
 class Client():
 
 	def get_repo_path(self,id):

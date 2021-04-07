@@ -7,9 +7,13 @@ class Db():
 		self.path = path
 		self.connect = lite.connect(self.path,check_same_thread=False)
 
+	def is_commit_head_of_branch(self,commit,branch):
+		branch_commits = self.fetch('''	SELECT Commits.Id FROM Commits WHERE Commits.branch = %s ORDER BY ID DESC'''%branch)
+		return branch_commits[0][0]==commit
+
 	def user_has_access(self,user_name,repo_id):
-		res = self.fetch('''	SELECT * FROM Repos Join Connections ON Repos.Id = Connections.Repo 
-						Join Users On Connections.User = Users.Id 
+		res = self.fetch('''	SELECT * FROM Repos JOIN Connections ON Repos.Id = Connections.Repo 
+						JOIN Users On Connections.User = Users.Id 
 						WHERE Users.Name = "%s" AND Repos.Id = %s'''%(user_name,repo_id))
 		return len(res)!=0
 
@@ -70,9 +74,9 @@ class Db():
 		self.execute('''	INSERT INTO Repos (Name) VALUES("%s")'''%(repo_name))
 		repo = self.fetch('''	SELECT Repos.id, Repos.Name From Repos ORDER BY ID DESC''')[0]
 		repo = {"id": repo[0],"name":repo[1]}
-		self.add_user_to_repo(owner["id"],repo["id"])
-		branch = self.add_branch("Main",-1,owner,repo)
-		self.add_commit("Init","Initial Commit",branch["id"],-1,owner["id"])
+		self.add_user_to_repo(owner,repo["id"])
+		branch = self.add_branch("Main",owner,repo["id"])
+		self.add_commit("Init","Initial Commit",branch,-1,owner)
 		return repo
 
 	def add_branch(self, branch_name,owner,repo):
