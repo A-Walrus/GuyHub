@@ -308,7 +308,9 @@ class RepoView(Window):
 		self.ui = AddUser(self.data)
 
 	def set_path(self):
-		file = str(QFileDialog.getExistingDirectory(self, "Select Working Directory For %s"%self.data["repo"]["name"]))
+		file=''
+		while file=='':
+			file = str(QFileDialog.getExistingDirectory(self, "Select Working Directory For %s"%self.data["repo"]["name"]))
 		main.client.set_location(self.data["repo"]["id"],file)
 		self.setWindowTitle(getWindowTitle(["Repo",self.data["repo"]["name"],main.client.get_repo_path(self.data["repo"]["id"])]))
 
@@ -552,9 +554,10 @@ class PopUP(BoxLayout):
 
 class AddUser(PopUP):
 	def pressed(self):
-		main.client.get(["add_user",self.data["repo"]["id"],self.users_dict[self.combo.currentText()]])
-		self.close()
-		main.ui.reload()
+		if self.combo.currentText() in self.users_dict:
+			main.client.get(["add_user",self.data["repo"]["id"],self.users_dict[self.combo.currentText()]])
+			self.close()
+			main.ui.reload()
 
 	def __init__(self,data,*args,**kwargs):
 		self.data = data

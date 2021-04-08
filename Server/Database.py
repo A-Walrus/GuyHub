@@ -68,7 +68,8 @@ class Db():
 		return [{"name": repo[0],"id":repo[1]} for repo in repos]
 
 	def add_user_to_repo(self, user, repo):
-		self.execute('''	INSERT INTO Connections (Repo,User) VALUES("%s","%s")'''%(repo,user))
+		if len(self.fetch('''	SELECT * FROM Connections WHERE Connections.Repo = %s AND Connections.User = %s'''%(repo,user)))==0:
+			self.execute('''	INSERT INTO Connections (Repo,User) VALUES("%s","%s")'''%(repo,user))
 
 	def add_repo(self, owner, repo_name):
 		self.execute('''	INSERT INTO Repos (Name) VALUES("%s")'''%(repo_name))

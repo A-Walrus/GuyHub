@@ -70,13 +70,10 @@ def fork(commit_id,branch_name):
 		return ""
 
 
-
-
 @app.route("/users")
 @auth.login_required
 def get_users():
 	return {"users":db.get_all_users()}
-
 
 
 @app.route("/commits/<int:commit_id>", methods = ["POST","GET"])
