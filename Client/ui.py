@@ -190,7 +190,7 @@ class Tree(QScrollArea):
 		self.branch_colors={}
 		self.grid = [[[] for i in branches]for i in self.commits]
 		collumns = [None]*len(branches)
-		used_collumns = [0]*len(branches) # last row used in each collumn
+		used_collumns = [-1]*len(branches) # last row used in each collumn
 		self.commit_positions = {}
 
 		for i, commit in enumerate(self.commits):
@@ -212,7 +212,7 @@ class Tree(QScrollArea):
 					self.branch_colors[branch_id]= self.COLORS[0]
 				else: # new branch
 					parent_pos = self.commit_positions[commit["parent"]]
-					l = list(filter(lambda x: x[1]==None and used_collumns[x[0]]<parent_pos[0] and x[0]>parent_pos[1],enumerate(collumns)))
+					l = list(filter(lambda x: x[1]==None and used_collumns[x[0]]<parent_pos[0] and x[0]>parent_pos[1]  ,enumerate(collumns)))
 					collumn = l[0][0]
 					collumns[collumn] = branch_id
 					self.add_cell_data(i,collumn,{"dirs":[0 if is_dead else 2],"symbol":True,"color": self.COLORS[collumn%len(self.COLORS)]},commit)
@@ -555,7 +555,9 @@ class PopUP(BoxLayout):
 class AddUser(PopUP):
 	def pressed(self):
 		if self.combo.currentText() in self.users_dict:
-			main.client.get(["add_user",self.data["repo"]["id"],self.users_dict[self.combo.currentText()]])
+			repo = self.data["repo"]["id"]
+			user = self.users_dict[self.combo.currentText()]
+			main.client.post(["add_user"],{"Repo":repo,"User":user})
 			self.close()
 			main.ui.reload()
 
@@ -600,9 +602,10 @@ class Commit(PopUP):
 class Fork(PopUP):
 	def pressed(self):
 		name = self.line.getText()
-		main.client.get(["fork",self.data["id"],name])
-		main.ui.reload()
-		self.close()
+		if name!="":
+			main.client.post(["fork"],{"Commit":self.data["id"],"Branch":name})
+			main.ui.reload()
+			self.close()
 
 	def __init__(self,data,*args,**kwargs):
 		self.data=data
@@ -620,7 +623,7 @@ class Repo(PopUP):
 	def pressed(self):
 		name = self.line.getText()
 		print(name)
-		main.client.get(['create_repo',name])
+		main.client.post(['create_repo'],{"Name":name})
 		self.close()
 		main.ui.reload()
 

@@ -29,9 +29,11 @@ def verify_password(username,password):
 def profile():
 	return {"user":db.get_user(auth.current_user()),"repos":db.get_user_repos(auth.current_user())}
 
-@app.route('/create_repo/<name>')
+
+@app.route('/create_repo', methods = ['POST'])
 @auth.login_required
-def create_repo(name):
+def create_repo():
+	name = request.args.get("Name")
 	db.add_repo(db.get_user(auth.current_user())["id"],name)
 	archive_name = os.path.join(app.config["commits"],"%s.zip"%db.get_newest_commit_id())
 	with ZipFile(archive_name, 'w') as file:
@@ -44,9 +46,11 @@ def repo(repo_id):
 	if user_access_to_repo(auth.current_user(),repo_id):
 		return {"commits":db.get_commits("Repos.ID = %s"%repo_id),"repo":db.get_repo(repo_id),"branches":db.get_repo_branches(repo_id),"users":db.get_repo_users(repo_id)}
 
-@app.route("/add_user/<int:repo_id>/<int:user_id>")
+@app.route("/add_user", methods = ['POST'])
 @auth.login_required
-def add_user(repo_id,user_id):
+def add_user():
+	repo_id = request.args.get("Repo")
+	user_id = request.args.get("User")
 	if user_access_to_repo(auth.current_user(),repo_id):
 		db.add_user_to_repo(user_id,repo_id)
 		return ""
@@ -54,9 +58,11 @@ def add_user(repo_id,user_id):
 
 
 
-@app.route("/fork/<int:commit_id>/<branch_name>")
+@app.route("/fork", methods = ['POST'])
 @auth.login_required
-def fork(commit_id,branch_name):
+def fork():
+	commit_id = request.args.get("Commit")
+	branch_name = request.args.get("Branch")
 	commit = db.get_commits("Commits.Id = %s"%commit_id)[0]
 	repo_id = commit["repo"]["id"]
 	if user_access_to_repo(auth.current_user(),repo_id):

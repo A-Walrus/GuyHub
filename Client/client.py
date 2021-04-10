@@ -46,8 +46,11 @@ class Client():
 		s.auth = self.auth
 		self.session = s
 
-	def get(self,path):
-		return self.session.get(self.get_url(path))
+	def get(self,path,params={}):
+		return self.session.get(self.get_url(path),params=params)
+
+	def post(self,path,params={}):
+		return self.session.post(self.get_url(path),params=params)
 
 	def pull_commit(self,commit_id,repo_id,to_working):
 		FILE = "pulls/%s.zip"%repo_id
