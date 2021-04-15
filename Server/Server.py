@@ -55,7 +55,15 @@ def add_user():
 		db.add_user_to_repo(user_id,repo_id)
 		return ""
 
-
+@app.route("/register", methods = ['POST'])
+def register():
+	username = request.args.get("User")
+	password = request.args.get("Pass")
+	if not db.user_exists(username):
+		db.add_user(username,password)
+		return ""
+	else:
+		abort(409)
 
 
 @app.route("/fork", methods = ['POST'])

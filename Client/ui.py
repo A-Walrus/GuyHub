@@ -417,59 +417,6 @@ class RepoView(Window):
 		self.show()
 		self.tree.select_line(len(self.data["commits"])-1)
 
-class Login(QWidget):
-	def set_label(self,textt,error=False):
-		self.label.setText(textt)
-		self.label.setStyleSheet("color: %s"%"#FFB900" if error else "white")
-
-	def __init__(self,*args,**kwargs):
-		super().__init__(*args,**kwargs)
-		self.setWindowTitle("Login")
-		self.show()
-
-		window = BoxLayout("v")
-		window.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
-
-		self.label = Header("Hello User!")
-		self.label.setAlignment(Qt.AlignCenter)
-		window.addWidget(self.label)
-		
-		self.username = icon_input_line("username","fa5s.user")
-		window.addWidget(self.username)
-
-		self.password = icon_input_line("password","fa5s.lock",QLineEdit.EchoMode.Password)
-		window.addWidget(self.password)
-
-		self.username.line.setText("Guy") # for testing
-		self.password.line.setText("pass_guy") # for testing
-
-		self.button = QPushButton("Login")
-		self.button.clicked.connect(self.on_press)
-		window.addWidget(self.button)
-
-		grid = QGridLayout()
-		grid.addWidget(window,1,1)
-		self.setLayout(grid)
-
-	def keyPressEvent(self, event):
-		if self.password.line.hasFocus() or self.button.hasFocus() or self.username.line.hasFocus():
-			if event.key() == Qt. Key_Return: 
-				self.on_press()
-
-	def on_press(self):
-		username,password = self.username.getText(), self.password.getText()
-		if username == "" or password =="":
-			self.set_label("Username and password cannot be empty!",True)
-		else:
-			main.client.set_auth((username,password))
-			self.set_label("Logging you in!")
-			main.update_ui()
-			r = main.client.get("profile")
-			if r.status_code==200:
-				main.set_ui(Profile(r.json()))
-			else:
-				self.set_label("Username or Password incorrect!",True)
-
 class Profile(Window):
 	def new_repo(self):
 		self.ui = Repo()
@@ -637,6 +584,115 @@ class Repo(PopUP):
 
 		self.addWidget(self.line)
 		self.addWidget(self.button)
+
+class Login(QWidget):
+	def set_label(self,text,error=False):
+		self.label.setText(text)
+		self.label.setStyleSheet("color: %s"%"#FFB900" if error else "white")
+
+	def __init__(self,*args,**kwargs):
+		super().__init__(*args,**kwargs)
+		self.setWindowTitle("Login")
+		self.show()
+
+		window = BoxLayout("v")
+		window.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
+
+		self.label = Header("Hello User!")
+		self.label.setAlignment(Qt.AlignCenter)
+		window.addWidget(self.label)
+		
+		self.username = icon_input_line("username","fa5s.user")
+		window.addWidget(self.username)
+
+		self.password = icon_input_line("password","fa5s.lock",QLineEdit.EchoMode.Password)
+		window.addWidget(self.password)
+
+		self.username.line.setText("Guy") # for testing
+		self.password.line.setText("pass_guy") # for testing
+
+		self.button = QPushButton("Login")
+		self.button.clicked.connect(self.on_press)
+		window.addWidget(self.button)
+
+		grid = QGridLayout()
+		grid.addWidget(window,1,1)
+		self.setLayout(grid)
+
+	def keyPressEvent(self, event):
+		if self.password.line.hasFocus() or self.button.hasFocus() or self.username.line.hasFocus():
+			if event.key() == Qt. Key_Return: 
+				self.on_press()
+
+	def on_press(self):
+		username,password = self.username.getText(), self.password.getText()
+		if username == "" or password =="":
+			self.set_label("Username and password cannot be empty!",True)
+		else:
+			main.client.set_auth((username,password))
+			self.set_label("Logging you in!")
+			main.update_ui()
+			r = main.client.get("profile")
+			if r.status_code==200:
+				main.set_ui(Profile(r.json()))
+			else:
+				self.set_label("Username or Password incorrect!",True)
+
+class Register(QWidget):
+	def set_label(self,text,error=False):
+		self.label.setText(text)
+		self.label.setStyleSheet("color: %s"%"#FFB900" if error else "white")
+
+	def __init__(self,*args,**kwargs):
+		super().__init__(*args,**kwargs)
+		self.setWindowTitle("Register")
+		self.show()
+
+		window = BoxLayout("v")
+		window.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
+
+		self.label = Header("Hello User!")
+		self.label.setAlignment(Qt.AlignCenter)
+		window.addWidget(self.label)
+		
+		self.username = icon_input_line("username","fa5s.user")
+		window.addWidget(self.username)
+
+		self.password = icon_input_line("password","fa5s.lock",QLineEdit.EchoMode.Password)
+		window.addWidget(self.password)
+
+		self.password2 = icon_input_line("confirm password","fa5s.lock",QLineEdit.EchoMode.Password)
+		window.addWidget(self.password2)
+
+		self.button = QPushButton("Register")
+		self.button.clicked.connect(self.on_press)
+		window.addWidget(self.button)
+
+		grid = QGridLayout()
+		grid.addWidget(window,1,1)
+		self.setLayout(grid)
+
+	def keyPressEvent(self, event):
+		if self.password.line.hasFocus() or self.button.hasFocus() or self.username.line.hasFocus() or self.password2.line.hasFocus():
+			if event.key() == Qt. Key_Return: 
+				self.on_press()
+
+	def on_press(self):
+		username,password,password2 = self.username.getText(), self.password.getText(), self.password2.getText()
+		if username == "" or password =="" or password2=="":
+			self.set_label("Username and password cannot be empty!",True)
+		elif password2!=password:
+			self.set_label("Passwords don't match!",True)
+		else:
+			self.set_label("Signing you up!")
+			main.update_ui()
+			r = main.client.post('register',{"User":username,"Pass":password})
+			if r.status_code==200:
+				main.client.set_auth((username,password))
+				r = main.client.get("profile")
+				main.set_ui(Profile(r.json()))
+			else:
+				self.set_label("Username taken!",True)
 
 
 main = Main()
