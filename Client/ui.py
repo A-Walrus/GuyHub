@@ -9,6 +9,13 @@ from client import *
 
 SIZE = 24
 
+class GuyHub(QWidget):
+	def __init__(self,*args,**kwargs):
+		super().__init__(*args,**kwargs)
+		self.setWindowIcon(QIcon('logo.png'))
+
+
+
 class Main():
 	def __init__(self):
 		self.app = get_app()
@@ -41,7 +48,7 @@ def get_app():
 def getWindowTitle(items):
 	return " - ".join(items)
 
-class BoxLayout(QWidget):
+class BoxLayout(GuyHub):
 	def __init__(self,direction,*args,**kwargs):
 		super().__init__(*args,**kwargs)
 		if direction == "h":
@@ -585,7 +592,7 @@ class Repo(PopUP):
 		self.addWidget(self.line)
 		self.addWidget(self.button)
 
-class BigWindow(QWidget):
+class BigWindow(GuyHub):
 	def onClick(self):
 		main.set_ui(self.buttonPage())
 
@@ -608,7 +615,6 @@ class BigWindow(QWidget):
 		layout.addWidget(corner)
 		layout.addWidget(grid_w)
 		self.setLayout(layout)
-
 
 class Login(BigWindow):
 	def set_label(self,text,error=False):
@@ -702,7 +708,6 @@ class Register(BigWindow):
 				main.set_ui(Profile(r.json()))
 			else:
 				self.set_label("Username taken!",True)
-
 
 main = Main()
 main.set_ui(Login())
