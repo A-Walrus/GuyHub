@@ -3,18 +3,15 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 import sys
 
-
 import qtawesome as qta
 from client import *
 
 SIZE = 24
 
-class GuyHub(QWidget):
+class Screen(QWidget):
 	def __init__(self,*args,**kwargs):
 		super().__init__(*args,**kwargs)
 		self.setWindowIcon(QIcon('logo.png'))
-
-
 
 class Main():
 	def __init__(self):
@@ -48,7 +45,7 @@ def get_app():
 def getWindowTitle(items):
 	return " - ".join(items)
 
-class BoxLayout(GuyHub):
+class BoxLayout(Screen):
 	def __init__(self,direction,*args,**kwargs):
 		super().__init__(*args,**kwargs)
 		if direction == "h":
@@ -421,7 +418,7 @@ class RepoView(Window):
 
 		self.w.setLayout(main_vbox)
 
-		self.show()
+		self.show() # in order for select_line to work
 		self.tree.select_line(len(self.data["commits"])-1)
 
 class Profile(Window):
@@ -479,8 +476,6 @@ class Profile(Window):
 		new_repo.clicked.connect(self.new_repo)
 		repo_view.addWidget(new_repo)
 
-
-
 		self.users_list = QListWidget()
 		self.users_list.setSelectionMode(QAbstractItemView.NoSelection)
 		user_view = BoxLayout("v")
@@ -495,9 +490,7 @@ class Profile(Window):
 		layout.addWidget(Header("%s's Profile"%self.data["user"]["name"]))
 		layout.addWidget(info)
 
-		self.show()
-
-class PopUP(BoxLayout):
+class PopUp(BoxLayout):
 	def __init__(self,header,*args,**kwargs):
 		super().__init__("v",*args,**kwargs)
 		self.addWidget(Header(header))
@@ -506,7 +499,7 @@ class PopUP(BoxLayout):
 		self.show()
 		self.setFixedSize(self.size())
 
-class AddUser(PopUP):
+class AddUser(PopUp):
 	def pressed(self):
 		if self.combo.currentText() in self.users_dict:
 			repo = self.data["repo"]["id"]
@@ -532,7 +525,7 @@ class AddUser(PopUP):
 		button.clicked.connect(self.pressed)
 		self.addWidget(button)
 
-class Commit(PopUP):
+class Commit(PopUp):
 	def pressed(self):
 		main.client.commit(self.data["id"],self.data["repo"]["id"],self.data["branch"]["id"],self.name.getText(),self.message.getText())
 		main.ui.reload()
@@ -553,7 +546,7 @@ class Commit(PopUP):
 		button.clicked.connect(self.pressed)
 		self.addWidget(button)
 		
-class Fork(PopUP):
+class Fork(PopUp):
 	def pressed(self):
 		name = self.line.getText()
 		if name!="":
@@ -573,7 +566,7 @@ class Fork(PopUP):
 		self.addWidget(self.line)
 		self.addWidget(self.button)
 
-class Repo(PopUP):
+class Repo(PopUp):
 	def pressed(self):
 		name = self.line.getText()
 		print(name)
@@ -592,7 +585,7 @@ class Repo(PopUP):
 		self.addWidget(self.line)
 		self.addWidget(self.button)
 
-class BigWindow(GuyHub):
+class CenterVboxWindow(Screen):
 	def onClick(self):
 		main.set_ui(self.buttonPage())
 
@@ -616,7 +609,7 @@ class BigWindow(GuyHub):
 		layout.addWidget(grid_w)
 		self.setLayout(layout)
 
-class Login(BigWindow):
+class Login(CenterVboxWindow):
 	def set_label(self,text,error=False):
 		self.label.setText(text)
 		self.label.setStyleSheet("color: %s"%"#FFB900" if error else "white")
@@ -661,7 +654,7 @@ class Login(BigWindow):
 			else:
 				self.set_label("Username or Password incorrect!",True)
 
-class Register(BigWindow):
+class Register(CenterVboxWindow):
 	def set_label(self,text,error=False):
 		self.label.setText(text)
 		self.label.setStyleSheet("color: %s"%"#FFB900" if error else "white")

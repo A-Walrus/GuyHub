@@ -6,8 +6,6 @@ from pathlib import Path
 from winreg import *
 import shutil
 
-
-
 requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning) # supress ssl certificate warning, because I trust my own server
 
 locations = "repo_locations.json"
@@ -73,8 +71,6 @@ class Client():
 		self.zip(repo)
 		r = self.session.post(self.get_url(["commits",parent_id]),files ={'file': open('Commit.zip', 'rb')}, \
 			params={"Branch":branch,"Name":name,"Message":message} )
-
-
 
 if __name__ == '__main__':
 	pass
