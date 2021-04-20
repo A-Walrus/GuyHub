@@ -585,39 +585,56 @@ class Repo(PopUP):
 		self.addWidget(self.line)
 		self.addWidget(self.button)
 
-class Login(QWidget):
+class BigWindow(QWidget):
+	def onClick(self):
+		main.set_ui(self.buttonPage())
+
+	def __init__(self,buttonText,buttonPage,*args,**kwargs):
+		super().__init__(*args,**kwargs)
+		self.show()
+		self.w = BoxLayout("v")
+		self.w.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
+		self.buttonPage= buttonPage
+
+		grid = QGridLayout()
+		grid.addWidget(self.w,1,1)
+		grid_w = QWidget()
+		grid_w.setLayout(grid)
+		corner = QPushButton(buttonText)
+		corner.clicked.connect(self.onClick)
+		corner.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
+
+		layout = QVBoxLayout()
+		layout.addWidget(corner)
+		layout.addWidget(grid_w)
+		self.setLayout(layout)
+
+
+class Login(BigWindow):
 	def set_label(self,text,error=False):
 		self.label.setText(text)
 		self.label.setStyleSheet("color: %s"%"#FFB900" if error else "white")
 
 	def __init__(self,*args,**kwargs):
-		super().__init__(*args,**kwargs)
+		super().__init__("Register",Register,*args,**kwargs)
 		self.setWindowTitle("Login")
-		self.show()
 
-		window = BoxLayout("v")
-		window.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
-
-		self.label = Header("Hello User!")
+		self.label = Header("Login")
 		self.label.setAlignment(Qt.AlignCenter)
-		window.addWidget(self.label)
+		self.w.addWidget(self.label)
 		
 		self.username = icon_input_line("username","fa5s.user")
-		window.addWidget(self.username)
+		self.w.addWidget(self.username)
 
 		self.password = icon_input_line("password","fa5s.lock",QLineEdit.EchoMode.Password)
-		window.addWidget(self.password)
+		self.w.addWidget(self.password)
 
 		self.username.line.setText("Guy") # for testing
 		self.password.line.setText("pass_guy") # for testing
 
 		self.button = QPushButton("Login")
 		self.button.clicked.connect(self.on_press)
-		window.addWidget(self.button)
-
-		grid = QGridLayout()
-		grid.addWidget(window,1,1)
-		self.setLayout(grid)
+		self.w.addWidget(self.button)
 
 	def keyPressEvent(self, event):
 		if self.password.line.hasFocus() or self.button.hasFocus() or self.username.line.hasFocus():
@@ -638,39 +655,31 @@ class Login(QWidget):
 			else:
 				self.set_label("Username or Password incorrect!",True)
 
-class Register(QWidget):
+class Register(BigWindow):
 	def set_label(self,text,error=False):
 		self.label.setText(text)
 		self.label.setStyleSheet("color: %s"%"#FFB900" if error else "white")
 
 	def __init__(self,*args,**kwargs):
-		super().__init__(*args,**kwargs)
+		super().__init__("Login",Login,*args,**kwargs)
 		self.setWindowTitle("Register")
-		self.show()
 
-		window = BoxLayout("v")
-		window.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
-
-		self.label = Header("Hello User!")
+		self.label = Header("Register")
 		self.label.setAlignment(Qt.AlignCenter)
-		window.addWidget(self.label)
+		self.w.addWidget(self.label)
 		
 		self.username = icon_input_line("username","fa5s.user")
-		window.addWidget(self.username)
+		self.w.addWidget(self.username)
 
 		self.password = icon_input_line("password","fa5s.lock",QLineEdit.EchoMode.Password)
-		window.addWidget(self.password)
+		self.w.addWidget(self.password)
 
 		self.password2 = icon_input_line("confirm password","fa5s.lock",QLineEdit.EchoMode.Password)
-		window.addWidget(self.password2)
+		self.w.addWidget(self.password2)
 
 		self.button = QPushButton("Register")
 		self.button.clicked.connect(self.on_press)
-		window.addWidget(self.button)
-
-		grid = QGridLayout()
-		grid.addWidget(window,1,1)
-		self.setLayout(grid)
+		self.w.addWidget(self.button)
 
 	def keyPressEvent(self, event):
 		if self.password.line.hasFocus() or self.button.hasFocus() or self.username.line.hasFocus() or self.password2.line.hasFocus():
