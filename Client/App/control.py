@@ -5,7 +5,6 @@ from zipfile import ZipFile
 from pathlib import Path
 from winreg import *
 import shutil
-
 requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning) # supress ssl certificate warning, because I trust my own server
 
 locations = "App/repo_locations.json"
@@ -14,7 +13,11 @@ def get_downloads_folder():
 	with OpenKey(HKEY_CURRENT_USER, r'SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders') as key:
 		return QueryValueEx(key, '{374DE290-123F-4565-9164-39C4925E467B}')[0]
 
-class Client():
+class Control():
+
+	def get_pull_path(self,id):
+		
+		return "App/pulls/%s.zip"%id
 
 	def get_repo_path(self,id):
 		if str(id) in self.locations:
@@ -50,10 +53,15 @@ class Client():
 	def post(self,path,params={}):
 		return self.session.post(self.get_url(path),params=params)
 
+	def ensure_in_pulls(self,commit_id):
+		FILE = self.get_pull_path(commit_id)
+		if not os.path.exists(FILE):
+			r = self.get(["commits",commit_id])
+			open(FILE,'wb').write(r.content)
+		return FILE
+
 	def pull_commit(self,commit_id,repo_id,to_working):
-		FILE = "pulls/%s.zip"%repo_id
-		r = self.get(["commits",commit_id])
-		open(FILE,'wb').write(r.content)
+		FILE = ensure_in_pulls(commit_id)
 		with ZipFile(FILE, 'r') as zipObj:
 			path = self.get_repo_path(repo_id) if to_working else "%s/commit"%get_downloads_folder()
 			zipObj.extractall(path)
@@ -89,6 +97,7 @@ class Client():
 
 	def create_repo(self,name):
 		self.post(['create_repo'],{"Name":name})
+
 
 if __name__ == '__main__':
 	pass

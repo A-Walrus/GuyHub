@@ -18,7 +18,6 @@ class Main():
 	def __init__(self):
 		self.app = get_app()
 		self.ui = None
-		self.client = Client()
 		self.ui_history=[]
 
 	def set_ui(self,ui,replace_history = False):
@@ -48,7 +47,7 @@ def get_app():
 def getWindowTitle(items):
 	return " - ".join(items)
 
-class BoxLayout(QWidget):
+class BoxLayout(Screen):
 	def __init__(self,direction,*args,**kwargs):
 		super().__init__(*args,**kwargs)
 		if direction == "h":
@@ -184,8 +183,11 @@ class CommitLine(QWidget):
 
 
 	def mousePressEvent(self,event):
-		self.clicked.emit(self.index)
-
+		if event.button() == Qt.LeftButton:
+			self.clicked.emit(self.index)
+		elif event.button() == Qt.RightButton:
+			main.ui.merge(self.data)
+	
 	def unselect(self):
 		self.setStyleSheet("")
 
@@ -324,17 +326,20 @@ class RepoView(Window):
 		self.name.setText(info["name"])
 
 	def fetch(self):
-		main.client.pull_commit(self.selected["id"],self.selected["repo"]["id"],True)
+		control.pull_commit(self.selected["id"],self.selected["repo"]["id"],True)
 
 	def add_user(self):
 		self.ui = AddUser(self.data)
+
+	def merge(self,data):
+		self.ui = Merge(self.selected,data)
 
 	def set_path(self):
 		file=''
 		while file=='':
 			file = str(QFileDialog.getExistingDirectory(self, "Select Working Directory For %s"%self.data["repo"]["name"]))
-		main.client.set_location(self.data["repo"]["id"],file)
-		self.setWindowTitle(getWindowTitle(["Repo",self.data["repo"]["name"],main.client.get_repo_path(self.data["repo"]["id"])]))
+		control.set_location(self.data["repo"]["id"],file)
+		self.setWindowTitle(getWindowTitle(["Repo",self.data["repo"]["name"],control.get_repo_path(self.data["repo"]["id"])]))
 
 	def commit(self):
 		self.ui= Commit(self.selected)
@@ -344,12 +349,12 @@ class RepoView(Window):
 		self.ui = Fork(self.selected)
 
 	def download(self):
-		main.client.pull_commit(self.selected["id"],self.selected["repo"]["id"],False)
+		control.pull_commit(self.selected["id"],self.selected["repo"]["id"],False)
 
 	def __init__(self,data,*args,**kwargs):
-		super().__init__(lambda : main.client.get_repo(self.data["repo"]["id"]).json(),*args,**kwargs)
+		super().__init__(lambda : control.get_repo(self.data["repo"]["id"]).json(),*args,**kwargs)
 		self.data = data
-		path = main.client.get_repo_path(self.data["repo"]["id"])
+		path = control.get_repo_path(self.data["repo"]["id"])
 		if path:
 			self.setWindowTitle(getWindowTitle(["Repo",self.data["repo"]["name"],path]))
 		else:
@@ -435,7 +440,7 @@ class Profile(Window):
 	def repo_selected(self):
 		repo = self.repos.selectedIndexes()[0]
 		id = self.repo_n_id[repo.data()]
-		r = main.client.get_repo(id)
+		r = control.get_repo(id)
 		
 		if r.status_code == 200:
 			self.repo = r.json()
@@ -450,7 +455,7 @@ class Profile(Window):
 			main.set_ui(RepoView(self.repo))
 
 	def __init__(self,data,*args,**kwargs):
-		super().__init__(lambda :  main.client.get_profile().json(),*args,**kwargs)
+		super().__init__(lambda :  control.get_profile().json(),*args,**kwargs)
 		self.data = data
 		self.repo = None
 		self.setWindowTitle(getWindowTitle(["Profile",self.data["user"]["name"]]))
@@ -494,20 +499,21 @@ class Profile(Window):
 		self.show()
 
 class PopUp(BoxLayout):
-	def __init__(self,header,*args,**kwargs):
+	def __init__(self,header,fixed=True,*args,**kwargs):
 		super().__init__("v",*args,**kwargs)
 		self.addWidget(Header(header))
 		self.setWindowTitle(header)
 		self.initUI()
 		self.show()
-		self.setFixedSize(self.size())
+		if(fixed):
+			self.setFixedSize(self.size())
 
 class AddUser(PopUp):
 	def pressed(self):
 		if self.combo.currentText() in self.users_dict:
 			repo = self.data["repo"]["id"]
 			user = self.users_dict[self.combo.currentText()]
-			main.client.add_user_to_repo(repo,user)
+			control.add_user_to_repo(repo,user)
 			self.close()
 			main.ui.reload()
 
@@ -520,7 +526,7 @@ class AddUser(PopUp):
 
 		self.combo = QComboBox()
 		users = [user["name"] for user in self.data["users"]]
-		r = main.client.get_users()
+		r = control.get_users()
 		self.users_dict = {user["name"]:user["id"] for user in r["users"]}
 		self.combo.addItems([user["name"] for user in r["users"] if not user["name"] in users])
 		self.addWidget(self.combo)
@@ -530,7 +536,7 @@ class AddUser(PopUp):
 
 class Commit(PopUp):
 	def pressed(self):
-		main.client.commit(self.data["id"],self.data["repo"]["id"],self.data["branch"]["id"],self.name.getText(),self.message.getText())
+		control.commit(self.data["id"],self.data["repo"]["id"],self.data["branch"]["id"],self.name.getText(),self.message.getText())
 		main.ui.reload()
 		self.close()
 
@@ -553,7 +559,7 @@ class Fork(PopUp):
 	def pressed(self):
 		name = self.line.getText()
 		if name!="":
-			main.client.fork(self.data["id"],name)
+			control.fork(self.data["id"],name)
 			main.ui.reload()
 			self.close()
 
@@ -573,7 +579,7 @@ class Repo(PopUp):
 	def pressed(self):
 		name = self.line.getText()
 		print(name)
-		main.client.create_repo(name)
+		control.create_repo(name)
 		self.close()
 		main.ui.reload()
 
@@ -588,6 +594,23 @@ class Repo(PopUp):
 		self.addWidget(self.line)
 		self.addWidget(self.button)
 
+class CommitFiles(QTreeView):
+	def __init__(self,id,*args,**kwargs):
+		super().__init__(*args,**kwargs)
+class Merge(PopUp):
+	def __init__(self,merge_to,merge_from,*args,**kwargs):
+		self.merge_to=merge_to
+		self.merge_from=merge_from
+		super().__init__("Merge Commits",False,*args,**kwargs)
+		
+
+	def initUI(self):
+		control.ensure_in_pulls(self.merge_to["id"])
+		control.ensure_in_pulls(self.merge_from["id"])
+		commits = BoxLayout('h')
+		commits.addWidget(CommitFiles(self.merge_to["id"]))
+		commits.addWidget(CommitFiles(self.merge_from["id"]))
+		self.addWidget(commits)
 class CenterVboxWindow(Screen):
 	def onClick(self):
 		main.set_ui(self.buttonPage())
@@ -648,10 +671,10 @@ class Login(CenterVboxWindow):
 		if username == "" or password =="":
 			self.set_label("Username and password cannot be empty!",True)
 		else:
-			main.client.set_auth((username,password))
+			control.set_auth((username,password))
 			self.set_label("Logging you in!")
 			main.update_ui()
-			r = main.client.get_profile()
+			r = control.get_profile()
 			if r.status_code==200:
 				main.set_ui(Profile(r.json()))
 			else:
@@ -697,13 +720,14 @@ class Register(CenterVboxWindow):
 		else:
 			self.set_label("Signing you up!")
 			main.update_ui()
-			r = main.client.post('register',{"User":username,"Pass":password})
+			r = control.post('register',{"User":username,"Pass":password})
 			if r.status_code==200:
-				main.client.set_auth((username,password))
-				r = main.client.get_profile()
+				control.set_auth((username,password))
+				r = control.get_profile()
 				main.set_ui(Profile(r.json()))
 			else:
 				self.set_label("Username taken!",True)
 
+control = Control()
 main = Main()
 main.set_ui(Login())
