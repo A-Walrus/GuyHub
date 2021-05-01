@@ -8,6 +8,7 @@ from App.control import *
 
 SIZE = 24
 
+
 class Screen(QWidget):
 	def __init__(self,*args,**kwargs):
 		super().__init__(*args,**kwargs)
@@ -47,7 +48,7 @@ def get_app():
 def getWindowTitle(items):
 	return " - ".join(items)
 
-class BoxLayout(Screen):
+class BoxLayout(QWidget):
 	def __init__(self,direction,*args,**kwargs):
 		super().__init__(*args,**kwargs)
 		if direction == "h":
@@ -58,6 +59,15 @@ class BoxLayout(Screen):
 
 	def addWidget(self,widget,*args,**kwargs):
 		self.layout.addWidget(widget,*args,**kwargs)
+
+class ButtonRow(BoxLayout):
+	def __init__(self,*args,**kwargs):
+		super().__init__('h',*args,**kwargs)
+
+	def add_button(self,text,function):
+		button = QPushButton(text)
+		button.clicked.connect(function)
+		self.addWidget(button)
 
 class icon_input_line(QWidget):
 	def getText(self):
@@ -376,9 +386,11 @@ class RepoView(Window):
 		hbox.addWidget(splitter)
 
 		header = Header(self.data["repo"]["name"])
+
 		add_user = QPushButton("Add User")
 		add_user.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
 		add_user.clicked.connect(self.add_user)
+
 		set_path = QPushButton("Set Repo Path")
 		set_path.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
 		set_path.clicked.connect(self.set_path)
@@ -388,33 +400,25 @@ class RepoView(Window):
 		reload_button.clicked.connect(self.reload)
 
 
-		top =BoxLayout("h")
+		top = BoxLayout("h")
 		top.addWidget(header)
-		top.addWidget(reload_button)
-		top.addWidget(add_user)
-		top.addWidget(set_path)
+		row = ButtonRow()
+		row.add_button("Reload",self.reload)
+		row.add_button("Add user",self.add_user)
+		row.add_button("Set Repo Path",self.set_path)
+		top.addWidget(row)
 		top.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed))
+
 
 		main_vbox.addWidget(top)
 		main_vbox.addWidget(hbox)
 		
-		fetch = QPushButton("Fetch")
-		fetch.clicked.connect(self.fetch)
+		bottom = ButtonRow()
+		bottom.add_button("Fetch",self.fetch)
+		bottom.add_button("Download",self.download)
+		bottom.add_button("Commit",self.commit)
+		bottom.add_button("Fork",self.fork)
 
-		commit = QPushButton("Commit")
-		commit.clicked.connect(self.commit)
-
-		download = QPushButton("Download")
-		download.clicked.connect(self.download)
-
-		fork = QPushButton("Fork")
-		fork.clicked.connect(self.fork)
-
-		bottom = BoxLayout("h")
-		bottom.addWidget(fetch)
-		bottom.addWidget(download)
-		bottom.addWidget(commit)
-		bottom.addWidget(fork)
 		bottom.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
 
 		main_vbox.addWidget(bottom)
