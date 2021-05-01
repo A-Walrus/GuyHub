@@ -72,6 +72,24 @@ class Client():
 		r = self.session.post(self.get_url(["commits",parent_id]),files ={'file': open('Commit.zip', 'rb')}, \
 			params={"Branch":branch,"Name":name,"Message":message} )
 
+	def get_repo(self,id):
+		return self.get(["repos",id])
+
+	def get_profile(self):
+		return self.get(["profile"])
+
+	def get_users(self):
+		return self.get(["users"]).json()
+
+	def add_user_to_repo(self,repo,user):
+		self.post(["add_user"],{"Repo":repo,"User":user})
+
+	def fork(self,commit,branch_name):
+		self.post(["fork"],{"Commit":commit,"Branch":branch_name})
+
+	def create_repo(self,name):
+		self.post(['create_repo'],{"Name":name})
+
 if __name__ == '__main__':
 	pass
 

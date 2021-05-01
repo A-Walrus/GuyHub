@@ -4,7 +4,7 @@ from PyQt5.QtGui import *
 import sys
 
 import qtawesome as qta
-from client import *
+from control import *
 
 SIZE = 24
 
@@ -20,9 +20,11 @@ class Main():
 		self.client = Client()
 		self.ui_history=[]
 
-	def set_ui(self,ui):
+	def set_ui(self,ui,replace_history = False):
 		if self.ui:
 			self.ui_history.append(self.ui)
+			if replace_history:
+				self.ui_history.pop()
 			self.ui.close()
 			self.ui = ui
 		else:
@@ -77,9 +79,10 @@ class Header(QLabel):
 	def __init__(self,*args,**kwargs):
 		super().__init__(*args,**kwargs)
 
-class Window(QWidget):
-	def __init__(self,*args,**kwargs):
+class Window(Screen):
+	def __init__(self,data_func=None,*args,**kwargs):
 		super().__init__(*args,**kwargs)
+		self.data_func= data_func
 		vbox = QVBoxLayout()
 		button = QPushButton(qta.icon('mdi.keyboard-backspace',color='white'),"Back")
 		button.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
@@ -94,6 +97,11 @@ class Window(QWidget):
 			ui = main.ui_history.pop()
 			main.set_ui(ui)
 			main.ui_history.pop() # pop self
+
+	def reload(self):
+		if self.data_func:
+			data = self.data_func()
+			main.set_ui(type(self)(data),True)
 
 class Cell(QWidget):
 	def __init__(self,infos,*args,**kwargs):
@@ -322,11 +330,6 @@ class RepoView(Window):
 		self.ui= Commit(self.selected)
 
 
-	def reload(self):
-		r = main.client.get(["repos",self.data["repo"]["id"]])
-		self.close()
-		self.__init__(r.json())
-
 	def fork(self):
 		self.ui = Fork(self.selected)
 
@@ -334,7 +337,7 @@ class RepoView(Window):
 		main.client.pull_commit(self.selected["id"],self.selected["repo"]["id"],False)
 
 	def __init__(self,data,*args,**kwargs):
-		super().__init__(*args,**kwargs)
+		super().__init__(lambda : main.client.get_repo(self.data["repo"]["id"]).json(),*args,**kwargs)
 		self.data = data
 		path = main.client.get_repo_path(self.data["repo"]["id"])
 		if path:
@@ -425,15 +428,10 @@ class Profile(Window):
 	def new_repo(self):
 		self.ui = Repo()
 
-	def reload(self):
-		self.data = main.client.get(["profile"]).json()
-		self.close()
-		self.__init__(self.data)
-
 	def repo_selected(self):
 		repo = self.repos.selectedIndexes()[0]
 		id = self.repo_n_id[repo.data()]
-		r = main.client.get(["repos",id])
+		r = main.client.get_repo(id)
 		
 		if r.status_code == 200:
 			self.repo = r.json()
@@ -448,7 +446,7 @@ class Profile(Window):
 			main.set_ui(RepoView(self.repo))
 
 	def __init__(self,data,*args,**kwargs):
-		super().__init__(*args,**kwargs)
+		super().__init__(lambda :  main.client.get_profile().json(),*args,**kwargs)
 		self.data = data
 		self.repo = None
 		self.setWindowTitle(getWindowTitle(["Profile",self.data["user"]["name"]]))
@@ -489,6 +487,7 @@ class Profile(Window):
 		self.w.setLayout(layout)
 		layout.addWidget(Header("%s's Profile"%self.data["user"]["name"]))
 		layout.addWidget(info)
+		self.show()
 
 class PopUp(BoxLayout):
 	def __init__(self,header,*args,**kwargs):
@@ -504,7 +503,7 @@ class AddUser(PopUp):
 		if self.combo.currentText() in self.users_dict:
 			repo = self.data["repo"]["id"]
 			user = self.users_dict[self.combo.currentText()]
-			main.client.post(["add_user"],{"Repo":repo,"User":user})
+			main.client.add_user_to_repo(repo,user)
 			self.close()
 			main.ui.reload()
 
@@ -517,9 +516,9 @@ class AddUser(PopUp):
 
 		self.combo = QComboBox()
 		users = [user["name"] for user in self.data["users"]]
-		r = main.client.get("users")
-		self.users_dict = {user["name"]:user["id"] for user in r.json()["users"]}
-		self.combo.addItems([user["name"] for user in r.json()["users"] if not user["name"] in users])
+		r = main.client.get_users()
+		self.users_dict = {user["name"]:user["id"] for user in r["users"]}
+		self.combo.addItems([user["name"] for user in r["users"] if not user["name"] in users])
 		self.addWidget(self.combo)
 		button = QPushButton("Add User")
 		button.clicked.connect(self.pressed)
@@ -550,7 +549,7 @@ class Fork(PopUp):
 	def pressed(self):
 		name = self.line.getText()
 		if name!="":
-			main.client.post(["fork"],{"Commit":self.data["id"],"Branch":name})
+			main.client.fork(self.data["id"],name)
 			main.ui.reload()
 			self.close()
 
@@ -570,7 +569,7 @@ class Repo(PopUp):
 	def pressed(self):
 		name = self.line.getText()
 		print(name)
-		main.client.post(['create_repo'],{"Name":name})
+		main.client.create_repo(name)
 		self.close()
 		main.ui.reload()
 
@@ -648,7 +647,7 @@ class Login(CenterVboxWindow):
 			main.client.set_auth((username,password))
 			self.set_label("Logging you in!")
 			main.update_ui()
-			r = main.client.get("profile")
+			r = main.client.get_profile()
 			if r.status_code==200:
 				main.set_ui(Profile(r.json()))
 			else:
@@ -697,7 +696,7 @@ class Register(CenterVboxWindow):
 			r = main.client.post('register',{"User":username,"Pass":password})
 			if r.status_code==200:
 				main.client.set_auth((username,password))
-				r = main.client.get("profile")
+				r = main.client.get_profile()
 				main.set_ui(Profile(r.json()))
 			else:
 				self.set_label("Username taken!",True)
