@@ -4,14 +4,14 @@ from PyQt5.QtGui import *
 import sys
 
 import qtawesome as qta
-from control import *
+from App.control import *
 
 SIZE = 24
 
 class Screen(QWidget):
 	def __init__(self,*args,**kwargs):
 		super().__init__(*args,**kwargs)
-		self.setWindowIcon(QIcon('logo.png'))
+		self.setWindowIcon(QIcon('App/logo.png'))
 
 class Main():
 	def __init__(self):
@@ -38,7 +38,7 @@ class Main():
 
 def get_app():
 	app = QApplication(sys.argv)
-	file = QFile("theme.qss")
+	file = QFile("App/theme.qss")
 	file.open(QFile.ReadOnly | QFile.Text)
 	stream = QTextStream(file)
 	app.setStyleSheet(stream.readAll())

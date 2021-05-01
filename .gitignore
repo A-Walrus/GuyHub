@@ -22,3 +22,7 @@ Client/pulls/
 Server/commits/
 
 Testing/Example Repos/
+
+Client/App/pulls/
+
+*.pyc

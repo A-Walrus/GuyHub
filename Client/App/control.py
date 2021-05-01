@@ -8,7 +8,7 @@ import shutil
 
 requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning) # supress ssl certificate warning, because I trust my own server
 
-locations = "repo_locations.json"
+locations = "App/repo_locations.json"
 
 def get_downloads_folder():
 	with OpenKey(HKEY_CURRENT_USER, r'SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders') as key:
