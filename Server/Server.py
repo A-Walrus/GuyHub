@@ -119,4 +119,4 @@ def commit(commit_id):
 
 if __name__ == '__main__':
 	WSGIRequestHandler.protocol_version = "HTTP/1.1" # http 1.1 -> allows keep alive
-	app.run( debug=True,ssl_context=('selfsigned.crt', 'private.key')) 
+	app.run(host="0.0.0.0", debug=True,ssl_context=('selfsigned.crt', 'private.key')) 
