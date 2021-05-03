@@ -26,3 +26,9 @@ Testing/Example Repos/
 Client/App/pulls/
 
 *.pyc
+
+*.zip
+
+Client/App/MergeFrom/
+
+Client/App/MergeTo/

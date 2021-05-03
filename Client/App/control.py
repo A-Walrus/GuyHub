@@ -8,6 +8,8 @@ import shutil
 requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning) # supress ssl certificate warning, because I trust my own server
 
 locations = "App/repo_locations.json"
+TEMP = "App/commit.zip"
+PULLS = "App/pulls"
 
 def get_downloads_folder():
 	with OpenKey(HKEY_CURRENT_USER, r'SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders') as key:
@@ -16,8 +18,7 @@ def get_downloads_folder():
 class Control():
 
 	def get_pull_path(self,id):
-		
-		return "App/pulls/%s.zip"%id
+		return f"{PULLS}/{id}"
 
 	def get_repo_path(self,id):
 		if str(id) in self.locations:
@@ -57,14 +58,16 @@ class Control():
 		FILE = self.get_pull_path(commit_id)
 		if not os.path.exists(FILE):
 			r = self.get(["commits",commit_id])
-			open(FILE,'wb').write(r.content)
+			open(TEMP,'wb').write(r.content)
+			with ZipFile(TEMP, 'r') as zipObj:
+				zipObj.extractall(FILE)
 		return FILE
 
 	def pull_commit(self,commit_id,repo_id,to_working):
-		FILE = ensure_in_pulls(commit_id)
-		with ZipFile(FILE, 'r') as zipObj:
-			path = self.get_repo_path(repo_id) if to_working else "%s/commit"%get_downloads_folder()
-			zipObj.extractall(path)
+		pull = self.ensure_in_pulls(commit_id)
+		path = self.get_repo_path(repo_id) if to_working else "%s/commit%s"%(get_downloads_folder(),commit_id)
+		shutil.rmtree(path)
+		shutil.copytree(pull,path)
 
 	def set_location(self,repo_id,path):
 		self.locations[str(repo_id)]=path
@@ -73,7 +76,7 @@ class Control():
 
 	def zip(self,repo_id):
 		path = self.get_repo_path(repo_id)
-		shutil.make_archive("Commit", 'zip', path)
+		shutil.make_archive(TEMP, 'zip', path)
 
 	def commit(self,parent_id,repo,branch,name="",message=""):
 		self.zip(repo)
@@ -97,6 +100,10 @@ class Control():
 
 	def create_repo(self,name):
 		self.post(['create_repo'],{"Name":name})
+
+	def setup_merge(self,Cto,Cfrom):
+		self.ensure_in_pulls(Cto)
+		self.ensure_in_pulls(Cfrom)
 
 
 if __name__ == '__main__':

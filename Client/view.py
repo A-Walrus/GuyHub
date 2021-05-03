@@ -594,23 +594,64 @@ class Repo(PopUp):
 		self.addWidget(self.line)
 		self.addWidget(self.button)
 
-class CommitFiles(QTreeView):
-	def __init__(self,id,*args,**kwargs):
-		super().__init__(*args,**kwargs)
+class CommitFiles(BoxLayout):
+	def clear(self):
+		self.tree.selectionModel().clearSelection()
+
+	def __init__(self,id,header=None,*args,**kwargs):
+		super().__init__("v",*args,**kwargs)
+
+		if header:
+			self.addWidget(Header(header))
+
+		self.tree = QTreeView()
+		self.tree.setSelectionMode(QAbstractItemView.MultiSelection)
+		path = control.get_pull_path(id)
+
+		self.model = QFileSystemModel()
+		self.model.setRootPath(QDir.rootPath())
+		self.tree.setModel(self.model)
+		self.tree.setRootIndex(self.model.index(path))
+
+		self.addWidget(self.tree)
+		buttons = ButtonRow()
+		buttons.add_button("Select All",self.tree.selectAll)
+		buttons.add_button("Deselect All",self.clear)
+		self.addWidget(buttons)
+
+	def get_selected(self):
+		s = self.tree.selectedIndexes()
+		indexes = [s[i] for i in range(0,len(s),4)]
+		paths = list(map(self.model.filePath,indexes))
+		print(paths)
+
+
+
 class Merge(PopUp):
 	def __init__(self,merge_to,merge_from,*args,**kwargs):
 		self.merge_to=merge_to
 		self.merge_from=merge_from
 		super().__init__("Merge Commits",False,*args,**kwargs)
 		
+	def merge(self):
+		self.to_widget.get_selected()
+		self.from_widget.get_selected()
 
 	def initUI(self):
-		control.ensure_in_pulls(self.merge_to["id"])
-		control.ensure_in_pulls(self.merge_from["id"])
+		control.setup_merge(self.merge_to["id"],self.merge_from["id"])
+
 		commits = BoxLayout('h')
-		commits.addWidget(CommitFiles(self.merge_to["id"]))
-		commits.addWidget(CommitFiles(self.merge_from["id"]))
+		self.to_widget = CommitFiles(self.merge_to["id"],"To")
+		self.from_widget = CommitFiles(self.merge_from["id"],"From")
+		commits.addWidget(self.to_widget)
+		commits.addWidget(self.from_widget)
+
 		self.addWidget(commits)
+
+		button = QPushButton("Merge")
+		button.clicked.connect(self.merge)
+		self.addWidget(button)
+
 class CenterVboxWindow(Screen):
 	def onClick(self):
 		main.set_ui(self.buttonPage())
