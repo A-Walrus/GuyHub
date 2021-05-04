@@ -102,7 +102,11 @@ class Db():
 		commit = self.fetch('''	SELECT Commits.Id From Commits ORDER BY ID DESC''')[0]
 		return commit[0]
 
-	def add_commit(self, commit_name, commit_message, branch,parent,user):
-		self.execute('''	INSERT INTO Commits (Name,Branch,Parent,User,Message) 
-							VALUES("%s","%s","%s","%s","%s")'''%(commit_name,branch,parent,user,commit_message))
+	def add_commit(self, commit_name, commit_message, branch,parent,user,mergedFrom=None):
+		if mergedFrom:
+			self.execute('''	INSERT INTO Commits (Name,Branch,Parent,User,Message,MergedFrom) 
+								VALUES("%s","%s","%s","%s","%s","%s")'''%(commit_name,branch,parent,user,commit_message,mergedFrom))
+		else:
+			self.execute('''	INSERT INTO Commits (Name,Branch,Parent,User,Message) 
+								VALUES("%s","%s","%s","%s","%s")'''%(commit_name,branch,parent,user,commit_message))
 		

@@ -5,11 +5,17 @@ from zipfile import ZipFile
 from pathlib import Path
 from winreg import *
 import shutil
+import re
 requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning) # supress ssl certificate warning, because I trust my own server
 
 locations = "App/repo_locations.json"
 TEMP = "App/commit.zip"
 PULLS = "App/pulls"
+MERGE = "App/merge"
+
+class Duplicate(Exception):
+	pass
+
 
 def get_downloads_folder():
 	with OpenKey(HKEY_CURRENT_USER, r'SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders') as key:
@@ -74,13 +80,12 @@ class Control():
 		with open(locations, 'w') as outfile:
 			json.dump(self.locations, outfile)
 
-	def zip(self,repo_id):
-		path = self.get_repo_path(repo_id)
-		shutil.make_archive(TEMP, 'zip', path)
+	def zip(self,path):
+		shutil.make_archive(TEMP.split(".")[0], 'zip', path)
 
 	def commit(self,parent_id,repo,branch,name="",message=""):
-		self.zip(repo)
-		r = self.session.post(self.get_url(["commits",parent_id]),files ={'file': open('Commit.zip', 'rb')}, \
+		self.zip(self.get_repo_path(repo))
+		r = self.session.post(self.get_url(["commits",parent_id]),files ={'file': open(TEMP, 'rb')}, \
 			params={"Branch":branch,"Name":name,"Message":message} )
 
 	def get_repo(self,id):
@@ -104,6 +109,32 @@ class Control():
 	def setup_merge(self,Cto,Cfrom):
 		self.ensure_in_pulls(Cto)
 		self.ensure_in_pulls(Cfrom)
+
+	def relative_path(self,path):
+		return re.search(r"pulls/\d+/(.+)",path).groups()[0]
+
+	def merge(self,paths,data_to,data_from):
+		print(paths)
+		relatives = list(map(self.relative_path,paths))
+
+		if len(set(relatives))!=len(relatives): #relative has duplicates 
+			raise Duplicate
+		try:
+			shutil.rmtree(MERGE)
+		except FileNotFoundError:
+			pass
+
+		for i,path in enumerate(relatives):
+			if "." in path: # file
+				shutil.copyfile(paths[i],os.path.join(MERGE,path))
+			else: # directory
+				shutil.copytree(paths[i],os.path.join(MERGE,path))
+
+		self.zip(MERGE)
+		print(data_to)
+		r = self.session.post(self.get_url(["commits",data_to["id"]]),files ={'file': open(TEMP, 'rb')}, \
+			params={"Branch":data_to["branch"]["id"],"Name":"Merged %s into %s"%(data_from["name"],data_to["name"]),"Message":" ","Merged":data_from["id"]} )
+
 
 
 if __name__ == '__main__':

@@ -106,7 +106,11 @@ def commit(commit_id):
 		if request.method == 'POST': # post
 			args = request.args
 			if db.is_commit_head_of_branch(commit_id,args.get("Branch")):
-				db.add_commit(args.get("Name"),args.get("Message"),args.get("Branch"),commit_id,db.get_user(auth.name())["id"])
+				merged = None
+				if args.get("Merged"):
+					merged =args.get("Merged")
+
+				db.add_commit(args.get("Name"),args.get("Message"),args.get("Branch"),commit_id,db.get_user(auth.name())["id"],merged)
 				id = db.get_newest_commit_id()
 				file = request.files["file"]
 				file.save(os.path.join(app.config["commits"],"%s.zip"%id))

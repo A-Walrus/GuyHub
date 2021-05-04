@@ -623,9 +623,7 @@ class CommitFiles(BoxLayout):
 		s = self.tree.selectedIndexes()
 		indexes = [s[i] for i in range(0,len(s),4)]
 		paths = list(map(self.model.filePath,indexes))
-		print(paths)
-
-
+		return paths
 
 class Merge(PopUp):
 	def __init__(self,merge_to,merge_from,*args,**kwargs):
@@ -634,8 +632,12 @@ class Merge(PopUp):
 		super().__init__("Merge Commits",False,*args,**kwargs)
 		
 	def merge(self):
-		self.to_widget.get_selected()
-		self.from_widget.get_selected()
+		paths = self.to_widget.get_selected()
+		paths+=self.from_widget.get_selected()
+		try:
+			control.merge(paths,self.merge_to,self.merge_from)
+		except Duplicate:
+			print("oh no")
 
 	def initUI(self):
 		control.setup_merge(self.merge_to["id"],self.merge_from["id"])
