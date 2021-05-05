@@ -638,6 +638,9 @@ class Merge(PopUp):
 			control.merge(paths,self.merge_to,self.merge_from)
 		except Duplicate:
 			print("oh no")
+		self.close()
+		main.ui.reload()
+
 
 	def initUI(self):
 		control.setup_merge(self.merge_to["id"],self.merge_from["id"])

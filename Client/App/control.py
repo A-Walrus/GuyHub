@@ -126,7 +126,13 @@ class Control():
 
 		for i,path in enumerate(relatives):
 			if "." in path: # file
-				shutil.copyfile(paths[i],os.path.join(MERGE,path))
+				print(paths[i])
+				full_path = os.path.join(MERGE,path)
+				print(full_path)
+				directory = os.path.dirname(full_path)
+				if not os.path.exists(directory):
+					os.makedirs(directory)
+				shutil.copyfile(paths[i],full_path)
 			else: # directory
 				shutil.copytree(paths[i],os.path.join(MERGE,path))
 
