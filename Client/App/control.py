@@ -16,6 +16,8 @@ MERGE = "App/merge"
 class Duplicate(Exception):
 	pass
 
+class NoneSelected(Exception):
+	pass
 
 def get_downloads_folder():
 	with OpenKey(HKEY_CURRENT_USER, r'SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders') as key:
@@ -120,6 +122,9 @@ class Control():
 		return re.search(r"pulls/\d+/(.+)",path).groups()[0]
 
 	def merge(self,paths,data_to,data_from):
+		if len(paths)==0:
+			raise NoneSelected
+
 		relatives = list(map(self.relative_path,paths))
 
 		if len(set(relatives))!=len(relatives): #relative has duplicates 
@@ -143,7 +148,7 @@ class Control():
 		r = self.session.post(self.get_url(["commits",data_to["id"]]),files ={'file': open(TEMP, 'rb')}, \
 			params={"Branch":data_to["branch"]["id"],"Name":"Merged %s into %s"%(data_from["name"],data_to["name"]),"Message":" ","Merged":data_from["id"]} )
 		print(data_to)
-		transfer_dir(MERGE,self.get_repo_path(data_to["repo"]["id"]))
+		self.transfer_dir(MERGE,self.get_repo_path(data_to["repo"]["id"]))
 
 
 

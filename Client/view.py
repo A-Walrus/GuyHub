@@ -169,7 +169,7 @@ class CommitLine(QWidget):
 		self.spacer = QWidget()
 		self.spacer.setFixedWidth(10)
 		self.label = QLabel(data["name"])
-		self.label.setFixedWidth(150)
+		self.label.setFixedWidth(250)
 		hbox.addWidget(self.spacer)
 		hbox.addWidget(self.label)
 
@@ -636,10 +636,11 @@ class Merge(PopUp):
 		paths+=self.from_widget.get_selected()
 		try:
 			control.merge(paths,self.merge_to,self.merge_from)
-		except Duplicate:
+			self.close()
+			main.ui.reload()
+		except (Duplicate, NoneSelected):
 			print("oh no")
-		self.close()
-		main.ui.reload()
+		
 
 
 	def initUI(self):
