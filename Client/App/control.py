@@ -72,8 +72,14 @@ class Control():
 	def pull_commit(self,commit_id,repo_id,to_working):
 		pull = self.ensure_in_pulls(commit_id)
 		path = self.get_repo_path(repo_id) if to_working else "%s/commit%s"%(get_downloads_folder(),commit_id)
-		shutil.rmtree(path)
-		shutil.copytree(pull,path)
+		self.transfer_dir(pull,path)
+
+	def transfer_dir(self,f,t):
+		try:
+			shutil.rmtree(t)
+			shutil.copytree(f,t)
+		except FileNotFoundError: 
+			pass
 
 	def set_location(self,repo_id,path):
 		self.locations[str(repo_id)]=path
@@ -114,7 +120,6 @@ class Control():
 		return re.search(r"pulls/\d+/(.+)",path).groups()[0]
 
 	def merge(self,paths,data_to,data_from):
-		print(paths)
 		relatives = list(map(self.relative_path,paths))
 
 		if len(set(relatives))!=len(relatives): #relative has duplicates 
@@ -126,9 +131,7 @@ class Control():
 
 		for i,path in enumerate(relatives):
 			if "." in path: # file
-				print(paths[i])
 				full_path = os.path.join(MERGE,path)
-				print(full_path)
 				directory = os.path.dirname(full_path)
 				if not os.path.exists(directory):
 					os.makedirs(directory)
@@ -137,9 +140,11 @@ class Control():
 				shutil.copytree(paths[i],os.path.join(MERGE,path))
 
 		self.zip(MERGE)
-		print(data_to)
 		r = self.session.post(self.get_url(["commits",data_to["id"]]),files ={'file': open(TEMP, 'rb')}, \
 			params={"Branch":data_to["branch"]["id"],"Name":"Merged %s into %s"%(data_from["name"],data_to["name"]),"Message":" ","Merged":data_from["id"]} )
+		print(data_to)
+		transfer_dir(MERGE,self.get_repo_path(data_to["repo"]["id"]))
+
 
 
 
