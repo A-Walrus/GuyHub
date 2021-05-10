@@ -43,7 +43,7 @@ class Db():
 							From Commits JOIN Branches ON Branches.id = Commits.Branch 
 							JOIN Users ON Users.id = Commits.User 
 							JOIN Repos ON Repos.id = Branches.Repo 
-							WHERE %s'''% condition)
+							WHERE Active = 1 AND %s'''% condition)
 		return [{"id":commit[0],"name":commit[1],"message":commit[2],"parent":commit[3],"branch":{"name":commit[4],"id":commit[5]},"user":commit[6],"repo":self.get_repo(commit[7]),"mergedFrom":commit[8]} for commit in commits]
 
 	def validate(self, user, password):
@@ -110,3 +110,5 @@ class Db():
 			self.execute('''	INSERT INTO Commits (Name,Branch,Parent,User,Message) 
 								VALUES("%s","%s","%s","%s","%s")'''%(commit_name,branch,parent,user,commit_message))
 		
+	def get_branch_owner(self,id):
+		return self.fetch('''SELECT Owner FROM Branches WHERE ID = %s'''%id)

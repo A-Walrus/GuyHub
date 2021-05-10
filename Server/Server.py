@@ -108,9 +108,14 @@ def commit(commit_id):
 			if db.is_commit_head_of_branch(commit_id,args.get("Branch")):
 				merged = None
 				if args.get("Merged"):
-					merged =args.get("Merged")
+					merged = args.get("Merged")
 
-				db.add_commit(args.get("Name"),args.get("Message"),args.get("Branch"),commit_id,db.get_user(auth.name())["id"],merged)
+				active = 0
+				owner = db.get_branch_owner(commit["branch"]["id"])
+				if owner == auth.id():
+					active = 1
+
+				db.add_commit(args.get("Name"),args.get("Message"),args.get("Branch"),commit_id,auth.id(),merged,active)
 				id = db.get_newest_commit_id()
 				file = request.files["file"]
 				file.save(os.path.join(app.config["commits"],"%s.zip"%id))
