@@ -102,13 +102,17 @@ class Db():
 		commit = self.fetch('''	SELECT Commits.Id From Commits ORDER BY ID DESC''')[0]
 		return commit[0]
 
-	def add_commit(self, commit_name, commit_message, branch,parent,user,mergedFrom=None):
+	def add_commit(self, commit_name, commit_message, branch,parent,user,mergedFrom,active):
 		if mergedFrom:
-			self.execute('''	INSERT INTO Commits (Name,Branch,Parent,User,Message,MergedFrom) 
-								VALUES("%s","%s","%s","%s","%s","%s")'''%(commit_name,branch,parent,user,commit_message,mergedFrom))
+			self.execute('''	INSERT INTO Commits (Name,Branch,Parent,User,Message,MergedFrom,Active) 
+								VALUES("%s","%s","%s","%s","%s","%s","%s")'''%(commit_name,branch,parent,user,commit_message,mergedFrom,active))
 		else:
-			self.execute('''	INSERT INTO Commits (Name,Branch,Parent,User,Message) 
-								VALUES("%s","%s","%s","%s","%s")'''%(commit_name,branch,parent,user,commit_message))
+			self.execute('''	INSERT INTO Commits (Name,Branch,Parent,User,Message,Active) 
+								VALUES("%s","%s","%s","%s","%s","%s")'''%(commit_name,branch,parent,user,commit_message,active))
 		
 	def get_branch_owner(self,id):
-		return self.fetch('''SELECT Owner FROM Branches WHERE ID = %s'''%id)
+		return self.fetch('''SELECT Owner FROM Branches WHERE ID = %s'''%id)[0][0]
+
+	def get_requests(self,repo_id):
+		data  = self.fetch('''SELECT Commits.ID, Commits.Name, Commits.User, Branches.Owner FROM Commits JOIN Branches ON Branches.ID = Commits.Branch WHERE Active=0''')
+		return [{"id":commit[0],"name":commit[1],"from":commit[2],"to":commit[3]} for commit in data]

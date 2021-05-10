@@ -51,7 +51,9 @@ def create_repo():
 @auth.login_required
 def repo(repo_id):
 	if user_access_to_repo(auth.name(),repo_id):
-		return {"commits":db.get_commits("Repos.ID = %s"%repo_id),"repo":db.get_repo(repo_id),"branches":db.get_repo_branches(repo_id),"users":db.get_repo_users(repo_id)}
+		return {"commits":db.get_commits("Repos.ID = %s"%repo_id),
+				"repo":db.get_repo(repo_id),"branches":db.get_repo_branches(repo_id),
+				"users":db.get_repo_users(repo_id),"requests":db.get_requests(repo_id)}
 
 @app.route("/add_user", methods = ['POST'])
 @auth.login_required
@@ -112,6 +114,8 @@ def commit(commit_id):
 
 				active = 0
 				owner = db.get_branch_owner(commit["branch"]["id"])
+
+				print(commit["branch"]["id"],owner,auth.id())
 				if owner == auth.id():
 					active = 1
 

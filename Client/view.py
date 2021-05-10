@@ -360,6 +360,8 @@ class RepoView(Window):
 		else:
 			self.set_path()
 
+		print(data)
+
 		main_vbox = QVBoxLayout()
 
 		hbox = BoxLayout("h")
@@ -377,6 +379,7 @@ class RepoView(Window):
 		self.user= QLabel("User")
 		self.branch = Header("Branch")
 		self.name = Header("Commit")
+		
 
 		info.addWidget(self.name)
 		info.addWidget(self.branch)
@@ -384,11 +387,17 @@ class RepoView(Window):
 		info.addWidget(self.message)
 
 
-		splitter = QSplitter(Qt.Horizontal)
+		splitter = QSplitter(Qt.Horizontal)	
+
+		self.requests = QListWidget()
+		for request in data["requests"]:
+			self.requests.addItem(str(request))
+
 
 		splitter.addWidget(self.tree)
 		splitter.addWidget(info)
 		hbox.addWidget(splitter)
+		hbox.addWidget(self.requests)
 
 		header = Header(self.data["repo"]["name"])
 
@@ -435,7 +444,7 @@ class RepoView(Window):
 
 class Profile(Window):
 	def new_repo(self):
-		self.ui = Repo()
+		self.ui = NewRepo()
 
 	def repo_selected(self):
 		repo = self.repos.selectedIndexes()[0]
@@ -575,7 +584,7 @@ class Fork(PopUp):
 		self.addWidget(self.line)
 		self.addWidget(self.button)
 
-class Repo(PopUp):
+class NewRepo(PopUp):
 	def pressed(self):
 		name = self.line.getText()
 		print(name)
