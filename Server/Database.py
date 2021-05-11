@@ -38,12 +38,13 @@ class Db():
 		cursor.execute(sql)
 		return cursor.fetchall()
 
-	def get_commits(self,condition):
+	def get_commits(self,condition,requests=False):
+		cond =  "" if requests else "Active = 1 AND"
 		commits = self.fetch('''	SELECT Commits.id, Commits.Name, Commits.Message, Commits.Parent, Branches.Name, Branches.id, Users.Name, Repos.Id, Commits.MergedFrom
 							From Commits JOIN Branches ON Branches.id = Commits.Branch 
 							JOIN Users ON Users.id = Commits.User 
 							JOIN Repos ON Repos.id = Branches.Repo 
-							WHERE Active = 1 AND %s'''% condition)
+							WHERE %s %s'''% (cond,condition))
 		return [{"id":commit[0],"name":commit[1],"message":commit[2],"parent":commit[3],"branch":{"name":commit[4],"id":commit[5]},"user":commit[6],"repo":self.get_repo(commit[7]),"mergedFrom":commit[8]} for commit in commits]
 
 	def validate(self, user, password):
@@ -116,3 +117,9 @@ class Db():
 	def get_requests(self,repo_id):
 		data  = self.fetch('''SELECT Commits.ID, Commits.Name, Commits.User, Branches.Owner FROM Commits JOIN Branches ON Branches.ID = Commits.Branch WHERE Active=0''')
 		return [{"id":commit[0],"name":commit[1],"from":commit[2],"to":commit[3]} for commit in data]
+
+	def delete_request(self,id):
+		self.execute(f'''DELETE FROM Commits WHERE ID  = {id}''')
+
+	def accept_request(self,id):
+		self.execute(f'''UPDATE Commits SET Active = 1 WHERE ID = {id}''')

@@ -98,6 +98,22 @@ def fork():
 def get_users():
 	return {"users":db.get_all_users()}
 
+@app.route("/response", methods = ['POST'])
+@auth.login_required
+def respond():
+	commit_id = request.args.get("Commit")
+	commit = db.get_commits("Commits.Id = %s"%commit_id,True)[0]
+	repo_id = commit["repo"]["id"]
+	if user_access_to_repo(auth.name(),repo_id) and db.get_branch_owner(commit["branch"]["id"])==auth.id(): # user has access to repo and is owner of the branch
+		if request.args.get("Response"):
+			db.accept_request(commit_id)
+		else:
+			db.delete_request(commit_id)
+		return ""
+	else:
+		abort(409)
+
+
 
 @app.route("/commits/<int:commit_id>", methods = ["POST","GET"])
 @auth.login_required

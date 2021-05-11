@@ -149,6 +149,9 @@ class Control():
 		print(data_to)
 		self.transfer_dir(MERGE,self.get_repo_path(data_to["repo"]["id"]))
 
+	def respond(self,id,response):
+		self.post("response",{"Commit":id,"Response":response})
+
 
 
 

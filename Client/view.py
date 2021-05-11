@@ -317,6 +317,10 @@ class Tree(QScrollArea):
 		self.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding))
 
 class Request(BoxLayout):
+	def respond(self,val):
+		control.respond(self.id,val)
+		main.ui.reload()
+
 	def __init__(self,by,to,name,id,*args,**kwargs):
 		super().__init__('h',*args,**kwargs)
 		self.id = id
@@ -325,10 +329,12 @@ class Request(BoxLayout):
 		if control.session.auth[0] == to: # if user is the owner of the branch, and can accept or reject requests
 			accept = QToolButton()
 			accept.setIcon(qta.icon('fa5s.check-square',color="#27ae60"))
+			accept.clicked.connect(lambda : self.respond(True))
 			self.addWidget(accept)
 
 			reject = QToolButton()
 			reject.setIcon(qta.icon('fa5s.window-close',color="#e74c3c"))
+			reject.clicked.connect(lambda : self.respond(False))
 			self.addWidget(reject)
 
 		self.addWidget(QLabel(text))
