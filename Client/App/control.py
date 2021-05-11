@@ -42,7 +42,6 @@ class Control():
 		return "https://%s:%s/%s"%('localhost',5000,path)
 
 	def __init__(self):
-		self.auth  = ("User","Pass")
 		self.get_session()
 		with open(locations) as file:
 			self.locations = json.load(file)
@@ -53,7 +52,7 @@ class Control():
 	def get_session(self):
 		s = requests.Session()
 		s.verify = False
-		s.auth = self.auth
+		s.auth = ("User","Pass")
 		self.session = s
 
 	def get(self,path,params={}):

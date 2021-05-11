@@ -316,6 +316,39 @@ class Tree(QScrollArea):
 		self.setWidget(self.vbox)
 		self.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding))
 
+class Request(BoxLayout):
+	def __init__(self,by,to,name,id,*args,**kwargs):
+		super().__init__('h',*args,**kwargs)
+		self.id = id
+		text = f'Request: <b>{name}</b> by <b>{by}</b> to <b>{to}</b>'
+
+		if control.session.auth[0] == to: # if user is the owner of the branch, and can accept or reject requests
+			accept = QToolButton()
+			accept.setIcon(qta.icon('fa5s.check-square',color="#27ae60"))
+			self.addWidget(accept)
+
+			reject = QToolButton()
+			reject.setIcon(qta.icon('fa5s.window-close',color="#e74c3c"))
+			self.addWidget(reject)
+
+		self.addWidget(QLabel(text))
+
+class Requests(QScrollArea):
+	def __init__(self,requests,users_d,*args,**kwargs):
+		super().__init__(*args,**kwargs)
+		users = {}
+		for user in users_d:
+			users[user["id"]] = user["name"]
+		print(users)
+
+		vbox =  BoxLayout("v")
+		self.setMinimumWidth(300)
+		for request in requests:
+			print(request)
+			vbox.addWidget(Request(users[request["from"]],users[request["to"]],request["name"],request["id"]))
+
+		self.setWidget(vbox)
+
 class RepoView(Window):
 	def update_info(self,info,color):
 		self.selected = info
@@ -360,7 +393,6 @@ class RepoView(Window):
 		else:
 			self.set_path()
 
-		print(data)
 
 		main_vbox = QVBoxLayout()
 
@@ -389,9 +421,8 @@ class RepoView(Window):
 
 		splitter = QSplitter(Qt.Horizontal)	
 
-		self.requests = QListWidget()
-		for request in data["requests"]:
-			self.requests.addItem(str(request))
+		self.requests = Requests(data["requests"],data["users"])
+		
 
 
 		splitter.addWidget(self.tree)
@@ -471,6 +502,7 @@ class Profile(Window):
 		self.repo_n_id ={}
 		for repo in self.data["repos"]:
 			self.repo_n_id[repo["name"]] = repo["id"]
+
 
 		info = BoxLayout("h")
 
