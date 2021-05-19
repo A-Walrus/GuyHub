@@ -321,9 +321,16 @@ class Request(BoxLayout):
 		control.respond(self.id,val)
 		main.ui.reload()
 
-	def __init__(self,by,to,name,id,*args,**kwargs):
+	def view(self,id,text):
+		c = CommitFiles(id,text)
+		c.show()
+		self.commit_files.append(c)
+
+	def __init__(self,by,to,name,id,parent,*args,**kwargs):
 		super().__init__('h',*args,**kwargs)
+		self.commit_files=[]
 		self.id = id
+		self.parent= parent
 		text = f'Request: <b>{name}</b> by <b>{by}</b> to <b>{to}</b>'
 
 		if control.session.auth[0] == to: # if user is the owner of the branch, and can accept or reject requests
@@ -338,6 +345,13 @@ class Request(BoxLayout):
 			self.addWidget(reject)
 
 		self.addWidget(QLabel(text))
+		b = QPushButton("View")
+		b.clicked.connect(lambda : self.view(self.id,"Request"))
+		self.addWidget(b)
+
+		b = QPushButton("View Parent")
+		b.clicked.connect(lambda : self.view(self.parent,"Request Parent"))
+		self.addWidget(b)
 
 class Requests(QScrollArea):
 	def __init__(self,requests,users_d,*args,**kwargs):
@@ -351,7 +365,8 @@ class Requests(QScrollArea):
 		self.setMinimumWidth(300)
 		for request in requests:
 			print(request)
-			vbox.addWidget(Request(users[request["from"]],users[request["to"]],request["name"],request["id"]))
+			print(request)
+			vbox.addWidget(Request(users[request["from"]],users[request["to"]],request["name"],request["id"],request["parent"]))
 
 		self.setWidget(vbox)
 
@@ -389,6 +404,10 @@ class RepoView(Window):
 
 	def download(self):
 		control.pull_commit(self.selected["id"],self.selected["repo"]["id"],False)
+
+	def open(self):
+		self.ui = CommitFiles(self.selected["id"],self.selected["name"])
+		self.ui.show()
 
 	def __init__(self,data,*args,**kwargs):
 		super().__init__(lambda : control.get_repo(self.data["repo"]["id"]).json(),*args,**kwargs)
@@ -469,6 +488,7 @@ class RepoView(Window):
 		bottom.add_button("Download",self.download)
 		bottom.add_button("Commit",self.commit)
 		bottom.add_button("Fork",self.fork)
+		bottom.add_button("Open",self.open)
 
 		bottom.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
 
@@ -641,18 +661,46 @@ class NewRepo(PopUp):
 		self.addWidget(self.line)
 		self.addWidget(self.button)
 
+class FileView(BoxLayout):
+	def __init__(self,path,*args,**kwargs):
+		super().__init__("v",*args,**kwargs)
+		self.path = path
+		self.addWidget(Header(path))
+		text = QTextBrowser()
+		self.addWidget(text)
+		with open(path,"r")as f:
+			try:
+				text.setText(f.read())
+			except:
+				text.setText("File is not a text file!")
+
+		self.show()
+
 class CommitFiles(BoxLayout):
 	def clear(self):
 		self.tree.selectionModel().clearSelection()
 
-	def __init__(self,id,header=None,*args,**kwargs):
+	def showF(self):
+		s = self.tree.selectedIndexes()
+		indexes = [s[i] for i in range(0,len(s),4)]
+		paths = list(map(self.model.filePath,indexes))
+		for path in paths:
+			if "." in path:
+				self.fileViews.append(FileView(path))
+
+	def __init__(self,id,header=None,multi=False,*args,**kwargs):
 		super().__init__("v",*args,**kwargs)
+
+		control.ensure_in_pulls(id)
 
 		if header:
 			self.addWidget(Header(header))
 
+		self.fileViews=[]
 		self.tree = QTreeView()
-		self.tree.setSelectionMode(QAbstractItemView.MultiSelection)
+
+		if multi==True:
+			self.tree.setSelectionMode(QAbstractItemView.MultiSelection)
 		path = control.get_pull_path(id)
 
 		self.model = QFileSystemModel()
@@ -664,7 +712,9 @@ class CommitFiles(BoxLayout):
 		buttons = ButtonRow()
 		buttons.add_button("Select All",self.tree.selectAll)
 		buttons.add_button("Deselect All",self.clear)
+		buttons.add_button("Show File",self.showF)
 		self.addWidget(buttons)
+
 
 	def get_selected(self):
 		s = self.tree.selectedIndexes()
@@ -691,11 +741,10 @@ class Merge(PopUp):
 
 
 	def initUI(self):
-		control.setup_merge(self.merge_to["id"],self.merge_from["id"])
 
 		commits = BoxLayout('h')
-		self.to_widget = CommitFiles(self.merge_to["id"],"To")
-		self.from_widget = CommitFiles(self.merge_from["id"],"From")
+		self.to_widget = CommitFiles(self.merge_to["id"],"To",True)
+		self.from_widget = CommitFiles(self.merge_from["id"],"From",True)
 		commits.addWidget(self.to_widget)
 		commits.addWidget(self.from_widget)
 

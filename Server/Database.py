@@ -115,8 +115,8 @@ class Db():
 		return self.fetch('''SELECT Owner FROM Branches WHERE ID = %s'''%id)[0][0]
 
 	def get_requests(self,repo_id):
-		data  = self.fetch('''SELECT Commits.ID, Commits.Name, Commits.User, Branches.Owner FROM Commits JOIN Branches ON Branches.ID = Commits.Branch WHERE Active=0''')
-		return [{"id":commit[0],"name":commit[1],"from":commit[2],"to":commit[3]} for commit in data]
+		data  = self.fetch('''SELECT Commits.ID, Commits.Name, Commits.User, Branches.Owner, Commits.Parent FROM Commits JOIN Branches ON Branches.ID = Commits.Branch WHERE Active=0''')
+		return [{"id":commit[0],"name":commit[1],"from":commit[2],"to":commit[3],"parent":commit[4]} for commit in data]
 
 	def delete_request(self,id):
 		self.execute(f'''DELETE FROM Commits WHERE ID  = {id}''')

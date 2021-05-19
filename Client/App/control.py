@@ -113,9 +113,6 @@ class Control():
 	def create_repo(self,name):
 		self.post(['create_repo'],{"Name":name})
 
-	def setup_merge(self,Cto,Cfrom):
-		self.ensure_in_pulls(Cto)
-		self.ensure_in_pulls(Cfrom)
 
 	def relative_path(self,path):
 		return re.search(r"pulls/\d+/(.+)",path).groups()[0]

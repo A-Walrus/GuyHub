@@ -118,7 +118,11 @@ def respond():
 @app.route("/commits/<int:commit_id>", methods = ["POST","GET"])
 @auth.login_required
 def commit(commit_id):
-	commit = db.get_commits("Commits.Id = %s"%commit_id)[0]
+	commit=None
+	if request.method=='POST':
+		commit = db.get_commits("Commits.Id = %s"%commit_id)[0]
+	else:
+		commit = db.get_commits("Commits.Id = %s"%commit_id,requests = True)[0]
 	repo_id = commit["repo"]["id"]
 	if user_access_to_repo(auth.name(),repo_id):
 		if request.method == 'POST': # post
