@@ -78,7 +78,7 @@ class Db():
 		repo = {"id": repo[0],"name":repo[1]}
 		self.add_user_to_repo(owner,repo["id"])
 		branch = self.add_branch("Main",owner,repo["id"])
-		self.add_commit("Init","Initial Commit",branch,-1,owner)
+		self.add_commit("Init","Initial Commit",branch,-1,owner,False,1)
 		return repo
 
 	def add_branch(self, branch_name,owner,repo):

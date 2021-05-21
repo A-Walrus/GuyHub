@@ -1,4 +1,4 @@
-import sys, json, requests, ssl
+import sys, json, requests
 from urllib3.exceptions import InsecureRequestWarning
 import os
 from zipfile import ZipFile
