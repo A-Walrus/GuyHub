@@ -5,6 +5,8 @@ import sys
 
 import qtawesome as qta
 from App.control import *
+import re
+
 
 SIZE = 24
 
@@ -406,7 +408,7 @@ class RepoView(Window):
 		control.pull_commit(self.selected["id"],self.selected["repo"]["id"],False)
 
 	def open(self):
-		self.ui = CommitFiles(self.selected["id"],self.selected["name"])
+		self.ui = CommitFiles(self.selected["id"],self.selected["name"],repo_id = self.selected["repo"]["id"])
 		self.ui.show()
 
 	def __init__(self,data,*args,**kwargs):
@@ -677,18 +679,27 @@ class FileView(BoxLayout):
 		self.show()
 
 class CommitFiles(BoxLayout):
+
+
 	def clear(self):
 		self.tree.selectionModel().clearSelection()
 
 	def showF(self):
-		s = self.tree.selectedIndexes()
-		indexes = [s[i] for i in range(0,len(s),4)]
-		paths = list(map(self.model.filePath,indexes))
-		for path in paths:
+		for path in self.get_selected():
 			if "." in path:
 				self.fileViews.append(FileView(path))
 
-	def __init__(self,id,header=None,multi=False,*args,**kwargs):
+	def grab(self):
+		for path in self.get_selected():
+			if "." in path:
+				p = re.search(PULLS+r"/\d+/(.*)",path).groups()[0]
+				with open(os.path.join(control.get_repo_path(self.repo_id),p),"wb") as w:
+					with open(path,"rb") as r:
+						w.write(r.read())
+
+
+
+	def __init__(self,id,header=None,multi=False,repo_id=None,*args,**kwargs):
 		super().__init__("v",*args,**kwargs)
 
 		control.ensure_in_pulls(id)
@@ -703,6 +714,7 @@ class CommitFiles(BoxLayout):
 			self.tree.setSelectionMode(QAbstractItemView.MultiSelection)
 		path = control.get_pull_path(id)
 
+
 		self.model = QFileSystemModel()
 		self.model.setRootPath(QDir.rootPath())
 		self.tree.setModel(self.model)
@@ -713,6 +725,9 @@ class CommitFiles(BoxLayout):
 		buttons.add_button("Select All",self.tree.selectAll)
 		buttons.add_button("Deselect All",self.clear)
 		buttons.add_button("Show File",self.showF)
+		if repo_id:
+			self.repo_id=repo_id
+			buttons.add_button("Grab to Working",self.grab)
 		self.addWidget(buttons)
 
 
