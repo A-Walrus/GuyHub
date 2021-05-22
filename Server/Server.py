@@ -5,6 +5,9 @@ from flask_httpauth import HTTPBasicAuth
 from werkzeug.serving import WSGIRequestHandler
 from zipfile import ZipFile
 
+ADMIN="ADMIN"
+
+
 class Auth(HTTPBasicAuth):
 	def name(self):
 		return self.current_user()
@@ -21,10 +24,17 @@ app.config["commits"]=os.path.join(os.getcwd(),"commits")
 
 
 def user_access_to_repo(username,repo_id):
-	if db.user_has_access(username,repo_id):
+	if username == ADMIN or db.user_has_access(username,repo_id):
 		return True
 	else:
 		abort(403)
+
+def get_user_repos(username):
+	if username==ADMIN:
+		return db.get_user_repos(None)
+	else:
+		return db.get_user_repos(username)
+
 
 @auth.verify_password
 def verify_password(username,password):
@@ -34,7 +44,7 @@ def verify_password(username,password):
 @app.route('/profile')
 @auth.login_required
 def profile():
-	return {"user":db.get_user(auth.name()),"repos":db.get_user_repos(auth.name())}
+	return {"user":db.get_user(auth.name()),"repos":get_user_repos(auth.name())}
 
 
 @app.route('/create_repo', methods = ['POST'])

@@ -63,9 +63,12 @@ class Db():
 		return self.get_user(user_name)
 
 	def get_user_repos(self, user_name):
-		repos = self.fetch('''	SELECT Repos.Name,Repos.ID
-							From Repos JOIN Connections ON Repos.id = Connections.Repo 
+		if user_name:
+			repos = self.fetch('''	SELECT Repos.Name,Repos.ID
+							FROM Repos JOIN Connections ON Repos.id = Connections.Repo 
 							JOIN Users ON Users.id = Connections.User WHERE Users.Name="%s"'''%user_name)
+		else:
+			repos = self.fetch('''	SELECT Repos.Name,Repos.ID FROM Repos''')
 		return [{"name": repo[0],"id":repo[1]} for repo in repos]
 
 	def add_user_to_repo(self, user, repo):
