@@ -31,6 +31,12 @@ class Screen(QWidget):
 		for child in self.were_shown:
 			child.show()
 
+	def setWindowTitle(self,title):
+		if type(title)== list:
+			super().setWindowTitle(getWindowTitle(title))
+		else:
+			super().setWindowTitle(title)
+
 class Main():
 	def __init__(self):
 		self.app = get_app()
@@ -105,6 +111,7 @@ class Header(QLabel):
 	def __init__(self,*args,**kwargs):
 		super().__init__(*args,**kwargs)
 
+# main screens of the program. Have reload and back functionality
 class Window(Screen):
 	def __init__(self,data_func=None,*args,**kwargs):
 		super().__init__(*args,**kwargs)
@@ -410,7 +417,7 @@ class RepoView(Window):
 		while file=='':
 			file = str(QFileDialog.getExistingDirectory(self, "Select Working Directory For %s"%self.data["repo"]["name"]))
 		control.set_location(self.data["repo"]["id"],file)
-		self.setWindowTitle(getWindowTitle(["Repo",self.data["repo"]["name"],control.get_repo_path(self.data["repo"]["id"])]))
+		self.setWindowTitle(["Repo",self.data["repo"]["name"],control.get_repo_path(self.data["repo"]["id"])])
 
 	def commit(self):
 		self.children.append(Commit(self.selected))
@@ -432,7 +439,7 @@ class RepoView(Window):
 		self.data = data
 		path = control.get_repo_path(self.data["repo"]["id"])
 		if path:
-			self.setWindowTitle(getWindowTitle(["Repo",self.data["repo"]["name"],path]))
+			self.setWindowTitle(["Repo",self.data["repo"]["name"],path])
 		else:
 			self.set_path()
 
@@ -542,7 +549,7 @@ class Profile(Window):
 		super().__init__(lambda :  control.get_profile().json(),*args,**kwargs)
 		self.data = data
 		self.repo = None
-		self.setWindowTitle(getWindowTitle(["Profile",self.data["user"]["name"]]))
+		self.setWindowTitle(["Profile",self.data["user"]["name"]])
 		self.repo_n_id ={}
 		for repo in self.data["repos"]:
 			self.repo_n_id[repo["name"]] = repo["id"]
@@ -688,6 +695,8 @@ class FileView(BoxLayout,Screen):
 		self.addWidget(self.text)
 		self.update(path)
 
+		self.setWindowTitle(path)
+
 
 	def update(self,path):
 		self.path = path
@@ -729,6 +738,7 @@ class CommitFiles(BoxLayout,Screen):
 	def __init__(self,id,header=None,multi=False,repo_id=None,*args,**kwargs):
 		super().__init__("v",*args,**kwargs)
 
+		self.setWindowTitle("Commit Files")
 		self.id=id
 
 		control.ensure_in_pulls(id)
@@ -948,6 +958,8 @@ class History(BoxLayout,Screen):
 
 	def __init__(self,file,repo,commit,*args,**kwargs):
 		super().__init__("h",*args,**kwargs)
+		
+		self.setWindowTitle([file,"History"])
 
 		self.setMinimumSize(500,300)
 
