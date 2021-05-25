@@ -15,6 +15,21 @@ class Screen(QWidget):
 	def __init__(self,*args,**kwargs):
 		super().__init__(*args,**kwargs)
 		self.setWindowIcon(QIcon('App/logo.png'))
+		self.children=[]
+		self.were_shown=[]
+
+	def close(self):
+		self.were_shown=[]
+		super().close()
+		for child in self.children:
+			if child.isVisible():
+				self.were_shown.append(child)
+				child.close()
+
+	def show(self):
+		super().show()
+		for child in self.were_shown:
+			child.show()
 
 class Main():
 	def __init__(self):
@@ -49,7 +64,7 @@ def get_app():
 def getWindowTitle(items):
 	return " - ".join(items)
 
-class BoxLayout(Screen):
+class BoxLayout(QWidget):
 	def __init__(self,direction,*args,**kwargs):
 		super().__init__(*args,**kwargs)
 		if direction == "h":
@@ -385,10 +400,10 @@ class RepoView(Window):
 		control.pull_commit(self.selected["id"],self.selected["repo"]["id"],True)
 
 	def add_user(self):
-		self.ui = AddUser(self.data)
+		self.children.append(AddUser(self.data))
 
 	def merge(self,data):
-		self.ui = Merge(self.selected,data)
+		self.children.append(Merge(self.selected,data))
 
 	def set_path(self):
 		file=''
@@ -398,18 +413,19 @@ class RepoView(Window):
 		self.setWindowTitle(getWindowTitle(["Repo",self.data["repo"]["name"],control.get_repo_path(self.data["repo"]["id"])]))
 
 	def commit(self):
-		self.ui= Commit(self.selected)
+		self.children.append(Commit(self.selected))
 
 
 	def fork(self):
-		self.ui = Fork(self.selected)
+		self.children.append(Fork(self.selected))
 
 	def download(self):
 		control.pull_commit(self.selected["id"],self.selected["repo"]["id"],False)
 
 	def open(self):
-		self.ui = CommitFiles(self.selected["id"],self.selected["name"],repo_id = self.selected["repo"]["id"])
-		self.ui.show()
+		files = CommitFiles(self.selected["id"],self.selected["name"],repo_id = self.selected["repo"]["id"])
+		self.children.append(files)
+		files.show()
 
 	def __init__(self,data,*args,**kwargs):
 		super().__init__(lambda : control.get_repo(self.data["repo"]["id"]).json(),*args,**kwargs)
@@ -503,7 +519,7 @@ class RepoView(Window):
 
 class Profile(Window):
 	def new_repo(self):
-		self.ui = NewRepo()
+		self.children.append(NewRepo())
 
 	def repo_selected(self):
 		repo = self.repos.selectedIndexes()[0]
@@ -567,7 +583,7 @@ class Profile(Window):
 		layout.addWidget(info)
 		self.show()
 
-class PopUp(BoxLayout):
+class PopUp(BoxLayout,Screen):
 	def __init__(self,header,fixed=True,*args,**kwargs):
 		super().__init__("v",*args,**kwargs)
 		self.addWidget(Header(header))
@@ -663,7 +679,7 @@ class NewRepo(PopUp):
 		self.addWidget(self.line)
 		self.addWidget(self.button)
 
-class FileView(BoxLayout):
+class FileView(BoxLayout,Screen):
 	def __init__(self,path,*args,**kwargs):
 		super().__init__("v",*args,**kwargs)
 		self.header = Header(path)
@@ -685,7 +701,7 @@ class FileView(BoxLayout):
 			except UnicodeDecodeError:
 				return "File is not a text file!"
 
-class CommitFiles(BoxLayout):
+class CommitFiles(BoxLayout,Screen):
 	def clear(self):
 		self.tree.selectionModel().clearSelection()
 
@@ -694,7 +710,7 @@ class CommitFiles(BoxLayout):
 			if "." in path:
 				view = FileView(path)
 				view.show()
-				self.uis.append(view)
+				self.children.append(view)
 
 	def grab(self):
 		for path in self.get_selected():
@@ -707,7 +723,7 @@ class CommitFiles(BoxLayout):
 	def history(self):
 		for path in self.get_selected():
 			if "." in path:
-				self.uis.append(History(control.relative_path(path),self.repo_id,self.id))
+				self.children.append(History(control.relative_path(path),self.repo_id,self.id))
 
 
 	def __init__(self,id,header=None,multi=False,repo_id=None,*args,**kwargs):
@@ -720,7 +736,6 @@ class CommitFiles(BoxLayout):
 		if header:
 			self.addWidget(Header(header))
 
-		self.uis=[]
 		self.tree = QTreeView()
 
 		if multi==True:
@@ -807,7 +822,7 @@ class CenterVboxWindow(Screen):
 		layout.addWidget(grid_w)
 		self.setLayout(layout)
 
-class Login(CenterVboxWindow):
+class Login(CenterVboxWindow,Screen):
 	def set_label(self,text,error=False):
 		self.label.setText(text)
 		self.label.setStyleSheet("color: %s"%"#FFB900" if error else "white")
@@ -852,7 +867,7 @@ class Login(CenterVboxWindow):
 			else:
 				self.set_label("Username or Password incorrect!",True)
 
-class Register(CenterVboxWindow):
+class Register(CenterVboxWindow,Screen):
 	def set_label(self,text,error=False):
 		self.label.setText(text)
 		self.label.setStyleSheet("color: %s"%"#FFB900" if error else "white")
@@ -900,7 +915,7 @@ class Register(CenterVboxWindow):
 			else:
 				self.set_label("Username taken!",True)
 
-class History(BoxLayout):
+class History(BoxLayout,Screen):
 
 	def trace(self,id):
 		if id==-1:
@@ -933,6 +948,9 @@ class History(BoxLayout):
 
 	def __init__(self,file,repo,commit,*args,**kwargs):
 		super().__init__("h",*args,**kwargs)
+
+		self.setMinimumSize(500,300)
+
 		self.file=file
 
 		self.show()
