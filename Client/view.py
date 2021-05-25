@@ -666,48 +666,61 @@ class NewRepo(PopUp):
 class FileView(BoxLayout):
 	def __init__(self,path,*args,**kwargs):
 		super().__init__("v",*args,**kwargs)
+		self.header = Header(path)
+		self.addWidget(self.header)
+		self.text = QTextBrowser()
+		self.addWidget(self.text)
+		self.update(path)
+
+
+	def update(self,path):
 		self.path = path
-		self.addWidget(Header(path))
-		text = QTextBrowser()
-		self.addWidget(text)
+		self.header.setText(path)
+		self.text.setText(FileView.read(path))
+
+	def read(path):
 		with open(path,"r")as f:
 			try:
-				text.setText(f.read())
-			except:
-				text.setText("File is not a text file!")
-
-		self.show()
+				return(f.read())
+			except UnicodeDecodeError:
+				return "File is not a text file!"
 
 class CommitFiles(BoxLayout):
-
-
 	def clear(self):
 		self.tree.selectionModel().clearSelection()
 
 	def showF(self):
 		for path in self.get_selected():
 			if "." in path:
-				self.fileViews.append(FileView(path))
+				view = FileView(path)
+				view.show()
+				self.uis.append(view)
 
 	def grab(self):
 		for path in self.get_selected():
 			if "." in path:
-				p = re.search(PULLS+r"/\d+/(.*)",path).groups()[0]
+				p = control.relative_path(path)
 				with open(os.path.join(control.get_repo_path(self.repo_id),p),"wb") as w:
 					with open(path,"rb") as r:
 						w.write(r.read())
 
+	def history(self):
+		for path in self.get_selected():
+			if "." in path:
+				self.uis.append(History(control.relative_path(path),self.repo_id,self.id))
 
 
 	def __init__(self,id,header=None,multi=False,repo_id=None,*args,**kwargs):
 		super().__init__("v",*args,**kwargs)
+
+		self.id=id
 
 		control.ensure_in_pulls(id)
 
 		if header:
 			self.addWidget(Header(header))
 
-		self.fileViews=[]
+		self.uis=[]
 		self.tree = QTreeView()
 
 		if multi==True:
@@ -725,6 +738,7 @@ class CommitFiles(BoxLayout):
 		buttons.add_button("Select All",self.tree.selectAll)
 		buttons.add_button("Deselect All",self.clear)
 		buttons.add_button("Show File",self.showF)
+		buttons.add_button("History",self.history)
 		if repo_id:
 			self.repo_id=repo_id
 			buttons.add_button("Grab to Working",self.grab)
@@ -885,6 +899,59 @@ class Register(CenterVboxWindow):
 				main.set_ui(Profile(r.json()))
 			else:
 				self.set_label("Username taken!",True)
+
+class History(BoxLayout):
+
+	def trace(self,id):
+		if id==-1:
+			return []
+		else:
+			return [id] + self.trace(self.dict[id]["parent"])
+
+	def gen_list(self):
+		history = []
+		for commit in self.history:
+			path = control.ensure_in_pulls(commit)
+			if os.path.exists(os.path.join(path,self.file)):
+				history.append(commit)
+			else:
+				break
+		filtered=[history[-1]]
+		for item in range(len(history)-1):
+			if FileView.read(os.path.join(control.get_pull_path(history[item]),self.file))!=FileView.read(os.path.join(control.get_pull_path(history[item+1]),self.file)):
+				filtered.append(history[item])
+		return filtered
+
+	def create_item(self,id):
+		item = QListWidgetItem(self.dict[id]["name"],self.commit_list)
+		item.id = id
+		return item
+
+	def selected(self,item,prev):
+		path = os.path.join(control.get_pull_path(item.id),self.file)
+		self.fileView.update(path)
+
+	def __init__(self,file,repo,commit,*args,**kwargs):
+		super().__init__("h",*args,**kwargs)
+		self.file=file
+
+		self.show()
+		self.commit_list = QListWidget()
+		self.addWidget(self.commit_list)
+		self.fileView=FileView(os.path.join(control.get_pull_path(commit),file))
+		self.addWidget(self.fileView)
+
+		commits = main.ui.data["commits"]
+		self.dict = {}
+		for commit in commits:
+			self.dict[commit["id"]]=commit
+		self.history = self.trace(commit["id"])
+
+		for commit in self.gen_list():
+			self.create_item(commit) 
+		
+		self.commit_list.currentItemChanged.connect(self.selected)
+
 
 control = Control()
 main = Main()

@@ -25,6 +25,9 @@ def get_downloads_folder():
 
 class Control():
 
+	def relative_path(self,abs_path):
+		re.search(PULLS+r"/\d+/(.*)",abs_path).groups()[0]
+
 	def get_pull_path(self,id):
 		return f"{PULLS}/{id}"
 
