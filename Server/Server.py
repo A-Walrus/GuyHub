@@ -178,8 +178,7 @@ def respond():
 	commit = db.get_commits("Commits.Id = %s"%commit_id,True)[0]
 	repo_id = commit["repo"]["id"]
 	if user_access_to_repo(auth.name(),repo_id) and db.get_branch_owner(commit["branch"]["id"])==auth.id(): # user has access to repo and is owner of the branch
-		print(request.args.get("Response"))
-		if request.args.get("Response"):
+		if request.args.get("Response")=="True":
 			db.accept_request(commit_id)
 		else:
 			db.delete_request(commit_id)

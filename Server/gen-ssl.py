@@ -1,6 +1,6 @@
 '''
 Self Signed Certificate Generator
-By: Not Guy
+By: Random Person on the Internet 
 Generates a self signed ssl certificate, for https
 Only needs to be run once, because the certificate is valid for 10 years
 '''
