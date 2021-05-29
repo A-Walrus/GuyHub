@@ -1,3 +1,10 @@
+'''
+Self Signed Certificate Generator
+By: Not Guy
+Generates a self signed ssl certificate, for https
+Only needs to be run once, because the certificate is valid for 10 years
+'''
+
 from OpenSSL import crypto, SSL
 
 def cert_gen(

@@ -383,13 +383,10 @@ class Requests(QScrollArea):
 		users = {}
 		for user in users_d:
 			users[user["id"]] = user["name"]
-		print(users)
 
 		vbox =  BoxLayout("v")
 		self.setMinimumWidth(300)
 		for request in requests:
-			print(request)
-			print(request)
 			vbox.addWidget(Request(users[request["from"]],users[request["to"]],request["name"],request["id"],request["parent"]))
 
 		self.setWidget(vbox)
@@ -399,7 +396,8 @@ class RepoView(Window):
 		self.selected = info
 		self.message.setText(info["message"])
 		self.user.setText(info["user"])
-		self.branch.setText(info["branch"]["name"])
+		owner = [branch for branch in self.data["branches"] if branch["name"]==info["branch"]["name"]][0]["owner"] # branch owner name
+		self.branch.setText(info["branch"]["name"]+" - "+owner)
 		self.branch.setStyleSheet("color: %s"%color)
 		self.name.setText(info["name"])
 
@@ -670,7 +668,6 @@ class Fork(PopUp):
 class NewRepo(PopUp):
 	def pressed(self):
 		name = self.line.getText()
-		print(name)
 		control.create_repo(name)
 		self.close()
 		main.ui.reload()
@@ -958,7 +955,7 @@ class History(BoxLayout,Screen):
 
 	def __init__(self,file,repo,commit,*args,**kwargs):
 		super().__init__("h",*args,**kwargs)
-		
+
 		self.setWindowTitle([file,"History"])
 
 		self.setMinimumSize(500,300)
