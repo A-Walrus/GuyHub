@@ -11,8 +11,7 @@ locations = "App/repo_locations.json"
 TEMP = "App/commit.zip"
 PULLS = "App/pulls"
 MERGE = "App/merge"
-IP = 'localhost'
-
+IP = "server_ip.txt"
 
 class Duplicate(Exception):
 	pass
@@ -43,6 +42,7 @@ class Control():
 			path = path
 		else:
 			path = "/".join([str(item) for item in path])
+		
 		return "https://%s:%s/%s"%(IP,5000,path)
 
 	def __init__(self):
@@ -155,7 +155,8 @@ class Control():
 
 
 
-
 if __name__ == '__main__':
 	pass
-
+else:
+	with open(IP,"r") as f:
+		IP = f.read()
