@@ -497,7 +497,7 @@ class RepoView(Window):
 		top.addWidget(header)
 		row = ButtonRow()
 		row.add_button("Reload",self.reload)
-		row.add_button("Add user",self.add_user)
+		row.add_button("Add User",self.add_user)
 		row.add_button("Set Repo Path",self.set_path)
 		top.addWidget(row)
 		top.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed))

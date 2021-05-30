@@ -159,7 +159,7 @@ def fork():
 	repo_id = commit["repo"]["id"]
 	if user_access_to_repo(auth.name(),repo_id):
 		branch = db.add_branch(branch_name,auth.id(),repo_id)
-		db.add_commit("Fork","",branch,commit_id,auth.id())
+		db.add_commit("Fork","",branch,commit_id,auth.id(),False,1)
 		id = db.get_newest_commit_id()
 
 		with open(os.path.join(app.config["commits"],"%s.zip"%commit_id),'rb')as r:
