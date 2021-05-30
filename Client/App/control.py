@@ -1,17 +1,18 @@
-import sys, json, requests
+import re,sys, json, requests
 from urllib3.exceptions import InsecureRequestWarning
 import os
 from zipfile import ZipFile
 from pathlib import Path
 from winreg import *
 import shutil
-import re
 requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning) # supress ssl certificate warning, because I trust my own server
 
 locations = "App/repo_locations.json"
 TEMP = "App/commit.zip"
 PULLS = "App/pulls"
 MERGE = "App/merge"
+IP = 'localhost'
+
 
 class Duplicate(Exception):
 	pass
@@ -42,7 +43,7 @@ class Control():
 			path = path
 		else:
 			path = "/".join([str(item) for item in path])
-		return "https://%s:%s/%s"%('localhost',5000,path)
+		return "https://%s:%s/%s"%(IP,5000,path)
 
 	def __init__(self):
 		self.get_session()
