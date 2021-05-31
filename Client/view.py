@@ -618,7 +618,7 @@ class AddUser(PopUp):
 		users = [user["name"] for user in self.data["users"]]
 		r = control.get_users()
 		self.users_dict = {user["name"]:user["id"] for user in r["users"]}
-		self.combo.addItems([user["name"] for user in r["users"] if not user["name"] in users])
+		self.combo.addItems([user["name"] for user in r["users"] if not user["name"] in users and not user["name"]=="ADMIN"])
 		self.addWidget(self.combo)
 		button = QPushButton("Add User")
 		button.clicked.connect(self.pressed)
